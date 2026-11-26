@@ -71,6 +71,8 @@
       #aiMsg { color: #f5a623; margin-top: 10px; font-size: 11px; min-height: 16px; }
       #aiState { color: var(--dim); margin-top: 6px; font-size: 10px; }
       #aiState.on { color: #57e6a9; }
+      #ttsTest { margin-top: 10px; width: 100%; padding: 10px; min-height: 44px; background: rgba(87,230,169,.12); color: #57e6a9; border: 1px solid rgba(87,230,169,.4); border-radius: 8px; font-size: 11px; letter-spacing: .14em; cursor: pointer; }
+      #diagText { color: var(--dim); margin-top: 8px; font-size: 10px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
 
       /* ---------- AI chat ---------- */
       #chatBar { position: fixed; bottom: 54px; left: 50%; transform: translateX(-50%); z-index: 190; display: none; gap: 6px; width: min(620px, calc(100vw - 20px)); }
@@ -385,6 +387,8 @@
         <button id="aiDone" type="button">DONE</button>
         <button id="aiClose" type="button">CLOSE</button>
         <div id="aiState">AI: not configured</div>
+        <button id="ttsTest" type="button">🔊 TEST VOICE</button>
+        <div id="diagText">voice check: —</div>
       </aside>
 
       <div id="aiReply" role="status"></div>
@@ -1737,10 +1741,24 @@
       }
       var aiPanel = $("aiPanel"), aiMsg = $("aiMsg"), aiState = $("aiState");
       var PROVIDER_BASE = { openai: "https://api.openai.com/v1", openrouter: "https://openrouter.ai/api/v1", groq: "https://api.groq.com/openai/v1", nvidia: "https://integrate.api.nvidia.com/v1", "nvidia-proxy": "https://apex-nvidia-proxy.heshamveo.workers.dev/v1", custom: "" };
-      function openAiPanel(){ aiPanel.style.display = "block"; requestAnimationFrame(function(){ aiPanel.classList.add("open"); }); }
+      function openAiPanel(){ updateVoicesDiag(); aiPanel.style.display = "block"; requestAnimationFrame(function(){ aiPanel.classList.add("open"); }); }
       function closeAiPanel(){ aiPanel.classList.remove("open"); setTimeout(function(){ if (!aiPanel.classList.contains("open")) aiPanel.style.display = "none"; }, 300); }
       $("aiBtn").addEventListener("click", function(){ aiPanel.classList.contains("open") ? closeAiPanel() : openAiPanel(); });
       $("aiClose").addEventListener("click", closeAiPanel);
+      $("ttsTest").addEventListener("click", function(){
+        updateVoicesDiag();
+        var synth = window.speechSynthesis;
+        if (!synth || typeof SpeechSynthesisUtterance === "undefined"){ DIAG.tts = "NOT AVAILABLE in this browser"; renderDiag(); return; }
+        try { if (synth.speaking || synth.pending) synth.cancel(); } catch(e){}
+        var u = new SpeechSynthesisUtterance("أهلاً بيك، أنا أبيكس. لو سمعت الجملة دي يبقى الصوت شغال تمام.");
+        u.lang = "ar-EG"; u.rate = 0.95;
+        try { var vs = synth.getVoices() || []; for (var i = 0; i < vs.length; i++){ if (vs[i].lang && vs[i].lang.toLowerCase().indexOf("ar") === 0){ u.voice = vs[i]; break; } } } catch(e){}
+        u.onstart = function(){ DIAG.tts = "started \u2014 you should hear it now"; renderDiag(); };
+        u.onend = function(){ DIAG.tts = "finished normally"; renderDiag(); };
+        u.onerror = function(ev){ DIAG.tts = "ERROR: " + (ev && ev.error ? ev.error : "unknown"); renderDiag(); };
+        DIAG.tts = "requested\u2026"; renderDiag();
+        setTimeout(function(){ try { synth.resume(); } catch(e){} synth.speak(u); }, 60);
+      });
       $("aiProvider").addEventListener("change", function(){
         var b = PROVIDER_BASE[this.value];
         if (b) $("aiBase").value = b;
@@ -1835,6 +1853,13 @@
       })();
 
       var ttsDrive = false, ttsTimer = 0, ttsResumeTimer = 0;
+      /* ---- voice diagnostics: readable in AI SETTINGS, so voice problems are never silent ---- */
+      var DIAG = { browser: "—", engine: "—", heard: "—", voices: "—", arVoice: "—", tts: "—" };
+      (function(){ var ua = navigator.userAgent || ""; DIAG.browser = /Electron/i.test(ua) ? "desktop app" : ((/Safari/i.test(ua) && !/Chrome|CriOS|FxiOS/i.test(ua)) ? "Safari" : ((/AppleWebKit/i.test(ua) && !/Safari/i.test(ua)) ? "in-app webview" : "other browser")); })();
+      function renderDiag(){ var el = $("diagText"); if (!el) return; el.textContent = "VOICE CHECK\nBrowser: " + DIAG.browser + "\nHearing engine: " + DIAG.engine + "\nLast heard: " + DIAG.heard + "\nVoices on device: " + DIAG.voices + " \u00B7 Arabic voice: " + DIAG.arVoice + "\nSpeech: " + DIAG.tts; }
+      function updateVoicesDiag(){ try { var vs = window.speechSynthesis ? speechSynthesis.getVoices() : []; DIAG.voices = String(vs.length); DIAG.arVoice = "no"; for (var i = 0; i < vs.length; i++){ if (vs[i].lang && vs[i].lang.toLowerCase().indexOf("ar") === 0){ DIAG.arVoice = "yes (" + vs[i].lang + ")"; break; } } } catch(e){ DIAG.voices = "error"; } renderDiag(); }
+      if (window.speechSynthesis && speechSynthesis.addEventListener) speechSynthesis.addEventListener("voiceschanged", updateVoicesDiag);
+      renderDiag();
       function endSpeak(){
         ttsDrive = false;
         if (ttsTimer){ clearInterval(ttsTimer); ttsTimer = 0; }
@@ -1847,6 +1872,7 @@
         setState("speaking", true); statusEl.textContent = "STATUS: SPEAKING";
         var synth = window.speechSynthesis;
         if (!synth || typeof SpeechSynthesisUtterance === "undefined"){
+          DIAG.tts = "NOT AVAILABLE in this browser"; renderDiag();
           // no TTS in this browser: keep the speaking face for a readable beat, then move on
           ttsDrive = true;
           var t0 = performance.now();
@@ -1888,8 +1914,9 @@
           u.lang = wantLang;
           if (voice) u.voice = voice;
           u.rate = 0.95;
+          u.onstart = function(){ if (ci === 0){ DIAG.tts = "started"; renderDiag(); } };
           u.onend = function(){ ci++; speakNext(); };
-          u.onerror = function(){ ci++; speakNext(); };
+          u.onerror = function(ev){ if (ci === 0){ DIAG.tts = "ERROR: " + (ev && ev.error ? ev.error : "unknown"); renderDiag(); } ci++; speakNext(); };
           try { synth.resume(); } catch(e){}
           synth.speak(u);
         }
@@ -2057,6 +2084,7 @@
             if (voiceWanted){ setState("listening", true); statusEl.textContent = "STATUS: LISTENING — DIDN'T CATCH THAT, TRY AGAIN"; }
             return;
           }
+          DIAG.heard = text; DIAG.engine = "local Whisper model"; renderDiag();
           statusEl.textContent = "STATUS: YOU SAID — " + text;
           submitQuestion(text); // from here the v1.2 flow owns voiceBusy (reset in endSpeak / error paths)
         }).catch(function(err){
@@ -2075,6 +2103,7 @@
         if (!Rec) return;
         if (recog){ restartRecog(); return; }
         recog = new Rec();
+        DIAG.engine = "system recognizer (ar-EG)"; renderDiag();
         recog.continuous = true;
         recog.interimResults = true;
         recog.lang = "ar-EG"; // Hesham speaks Egyptian Arabic — never follow the phone UI language
@@ -2088,6 +2117,7 @@
           if (interim) statusEl.textContent = "STATUS: LISTENING — " + interim.trim();
           finalText = finalText.trim();
           if (finalText){
+            DIAG.heard = finalText; renderDiag();
             voiceBusy = true;
             try { recog.stop(); } catch(e){}
             statusEl.textContent = "STATUS: THINKING";
