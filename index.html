@@ -360,6 +360,7 @@
           <option value="openrouter">OpenRouter</option>
           <option value="groq">Groq</option>
           <option value="nvidia">NVIDIA NIM</option>
+          <option value="nvidia-proxy">NVIDIA NIM via my proxy (web/mobile)</option>
           <option value="custom">Custom (OpenAI-compatible)</option>
         </select>
         <label for="aiModel">AI MODEL</label>
@@ -1732,7 +1733,7 @@
         if (cfg && cfg.model && cfg.key && cfg.base) applyAiConfig(cfg, true);
       }
       var aiPanel = $("aiPanel"), aiMsg = $("aiMsg"), aiState = $("aiState");
-      var PROVIDER_BASE = { openai: "https://api.openai.com/v1", openrouter: "https://openrouter.ai/api/v1", groq: "https://api.groq.com/openai/v1", nvidia: "https://integrate.api.nvidia.com/v1", custom: "" };
+      var PROVIDER_BASE = { openai: "https://api.openai.com/v1", openrouter: "https://openrouter.ai/api/v1", groq: "https://api.groq.com/openai/v1", nvidia: "https://integrate.api.nvidia.com/v1", "nvidia-proxy": "https://apex-nvidia-proxy.heshamveo.workers.dev/v1", custom: "" };
       function openAiPanel(){ aiPanel.style.display = "block"; requestAnimationFrame(function(){ aiPanel.classList.add("open"); }); }
       function closeAiPanel(){ aiPanel.classList.remove("open"); setTimeout(function(){ if (!aiPanel.classList.contains("open")) aiPanel.style.display = "none"; }, 300); }
       $("aiBtn").addEventListener("click", function(){ aiPanel.classList.contains("open") ? closeAiPanel() : openAiPanel(); });
