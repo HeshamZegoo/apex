@@ -606,6 +606,7 @@
       var $ = function(id){ return document.getElementById(id); };
       var gate = $("gate"), stage = $("stage"), frame = $("frame"), canvas = $("humCanvas"),
           ctx = canvas.getContext("2d", { desynchronized: true }), statusEl = $("status"), ringsEl = $("rings"),
+          statusHoldUntil = 0, statusOverrideText = "",
           bgImg = $("bgImg"), halo = $("halo");
 
       function fitCanvas(){
@@ -1457,9 +1458,11 @@
           } else {
             drawFigure(toImg, 1, scale, t, S.energy);
           }
-          statusEl.textContent = (S.state === "speaking" && S.energy > 0.58)
-            ? "STATUS: SPEAKING  INTENSITY: HIGH"
-            : "STATUS: " + S.state.toUpperCase();
+          if (performance.now() >= statusHoldUntil){
+            statusEl.textContent = (S.state === "speaking" && S.energy > 0.58)
+              ? "STATUS: SPEAKING  INTENSITY: HIGH"
+              : "STATUS: " + S.state.toUpperCase();
+          }
         }
 
         /* the ignition surge ring runs on its own clock, assembly or not */
@@ -1543,11 +1546,12 @@
         $("micBtn").textContent = "🎙 MIC OFF"; $("micBtn").classList.remove("micOn");
         stopVoice();
       }
+      function flashStatus(text, ms){ statusOverrideText = text; statusHoldUntil = performance.now() + (ms || 4000); statusEl.textContent = text; }
       $("micBtn").addEventListener("click", function(){
         if (S.micOn){ stopMic(); if (S.state === "speaking" || S.state === "listening") setState("idle"); return; }
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ statusEl.textContent = "STATUS: NO MICROPHONE ACCESS IN THIS BROWSER"; return; }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ flashStatus("STATUS: NO MICROPHONE ACCESS IN THIS BROWSER", 9000); return; }
         var micSettled = false;
-        var micWatchdog = setTimeout(function(){ if (!micSettled && !S.micOn) statusEl.textContent = "STATUS: MIC UNAVAILABLE IN THIS BROWSER \u2014 OPEN THIS PAGE IN SAFARI"; }, 5000);
+        var micWatchdog = setTimeout(function(){ if (!micSettled && !S.micOn) flashStatus("STATUS: MIC UNAVAILABLE IN THIS BROWSER \u2014 OPEN THIS PAGE IN SAFARI", 9000); }, 5000);
         navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
           micSettled = true; clearTimeout(micWatchdog);
           micStream = stream;
@@ -1571,7 +1575,7 @@
           setState("listening");
           statusEl.textContent = "STATUS: LISTENING";
           startVoice();
-        }).catch(function(){ micSettled = true; clearTimeout(micWatchdog); statusEl.textContent = "STATUS: MIC BLOCKED — ALLOW MICROPHONE ACCESS"; });
+        }).catch(function(){ micSettled = true; clearTimeout(micWatchdog); flashStatus("STATUS: MIC BLOCKED — ALLOW MICROPHONE ACCESS", 9000); });
       });
 
       /* ============================== camera / hand gesture ============================== */
@@ -1932,7 +1936,7 @@
         if (!q) return;
         if (!AICFG){
           showReply("⚠ Open AI SETTINGS and add your model + API key first — DONE saves them on this device.");
-          statusEl.textContent = "STATUS: AI NOT CONFIGURED";
+          flashStatus("STATUS: AI NOT CONFIGURED", 6000);
           voiceBusy = false;
           if (voiceWanted){ setState("listening", true); restartRecog(); }
           return;
@@ -1994,7 +1998,7 @@
         if (sttPipe) return Promise.resolve(sttPipe);
         if (sttLoading) return sttLoading;
         sttFailed = false;
-        statusEl.textContent = "STATUS: LOADING SPEECH MODEL FIRST TIME… 0%";
+        flashStatus("STATUS: LOADING SPEECH MODEL FIRST TIME… 0%", 3000);
         sttLoading = import(STT_CDN).then(function(T){
           T.env.allowLocalModels = false;
           T.env.useBrowserCache = true;
@@ -2003,7 +2007,7 @@
             quantized: true,
             progress_callback: function(p){
               if (p && p.status === "progress"){
-                statusEl.textContent = "STATUS: LOADING SPEECH MODEL FIRST TIME… " + Math.round(p.progress || 0) + "%";
+                flashStatus("STATUS: LOADING SPEECH MODEL FIRST TIME… " + Math.round(p.progress || 0) + "%", 3000);
               }
             }
           });
@@ -2068,7 +2072,7 @@
         var gen = voiceGen;
         voiceBusy = true;
         setState("thinking", true);
-        statusEl.textContent = "STATUS: TRANSCRIBING…";
+        flashStatus("STATUS: TRANSCRIBING…", 30000);
         var blob = new Blob(chunks, { type: chunks[0].type || "audio/webm" });
         blobTo16k(blob).then(function(audio){
           if (!audio || !audio.length) throw new Error("empty recording");
@@ -2081,16 +2085,16 @@
           var cleaned = text.replace(/\[[^\]]*\]|\([^)]*\)/g, "").trim();
           if (!cleaned){
             voiceBusy = false;
-            if (voiceWanted){ setState("listening", true); statusEl.textContent = "STATUS: LISTENING — DIDN'T CATCH THAT, TRY AGAIN"; }
+            if (voiceWanted){ setState("listening", true); flashStatus("STATUS: LISTENING — DIDN'T CATCH THAT, TRY AGAIN", 6000); }
             return;
           }
           DIAG.heard = text; DIAG.engine = "local Whisper model"; renderDiag();
-          statusEl.textContent = "STATUS: YOU SAID — " + text;
+          flashStatus("STATUS: YOU SAID — " + text, 7000);
           submitQuestion(text); // from here the v1.2 flow owns voiceBusy (reset in endSpeak / error paths)
         }).catch(function(err){
           if (gen !== voiceGen){ voiceBusy = false; return; }
           voiceBusy = false;
-          if (voiceWanted){ setState("listening", true); statusEl.textContent = "STATUS: LISTENING — SPEECH ERROR, TRY AGAIN"; }
+          if (voiceWanted){ setState("listening", true); flashStatus("STATUS: LISTENING — SPEECH ERROR, TRY AGAIN", 6000); }
           showReply("⚠ Speech transcription failed: " + (err && err.message ? err.message : err));
         });
       }
@@ -2114,7 +2118,7 @@
             if (r.isFinal) finalText += r[0].transcript;
             else interim += r[0].transcript;
           }
-          if (interim) statusEl.textContent = "STATUS: LISTENING — " + interim.trim();
+          if (interim) flashStatus("STATUS: LISTENING — " + interim.trim(), 1500);
           finalText = finalText.trim();
           if (finalText){
             DIAG.heard = finalText; renderDiag();
@@ -2129,7 +2133,7 @@
           recogRunning = false;
           if (ev && (ev.error === "not-allowed" || ev.error === "service-not-allowed")){
             voiceWanted = false;
-            statusEl.textContent = "STATUS: VOICE BLOCKED — ALLOW MICROPHONE ACCESS";
+            flashStatus("STATUS: VOICE BLOCKED — ALLOW MICROPHONE ACCESS", 9000);
             showReply("⚠ Voice input was blocked. Allow microphone access, then tap MIC again.");
           }
         };
@@ -2159,7 +2163,7 @@
         sttMode = "whisper";
         if (typeof MediaRecorder === "undefined"){
           sttFailed = true;
-          statusEl.textContent = "STATUS: VOICE RECORDING NOT SUPPORTED IN THIS BROWSER";
+          flashStatus("STATUS: VOICE RECORDING NOT SUPPORTED IN THIS BROWSER", 9000);
           showReply("⚠ This browser cannot record microphone audio for speech recognition.");
           return;
         }
@@ -2175,7 +2179,7 @@
             statusEl.textContent = "STATUS: LISTENING";
             startWebSpeech();
           } else {
-            statusEl.textContent = "STATUS: SPEECH MODEL FAILED TO LOAD — CHECK CONNECTION, THEN TOGGLE MIC TO RETRY";
+            flashStatus("STATUS: SPEECH MODEL FAILED TO LOAD — CHECK CONNECTION, THEN TOGGLE MIC TO RETRY", 10000);
             showReply("⚠ The on-device speech model could not be downloaded (" + (err && err.message ? err.message : "network error") + "). It downloads once (~80 MB) and is then cached on this device. Check your connection, then toggle MIC off and on to retry.");
           }
         });
