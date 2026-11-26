@@ -382,7 +382,7 @@
         <label for="aiTemp">TEMPERATURE</label>
         <div id="aiTempRow"><input id="aiTemp" type="range" min="0" max="2" step="0.1" value="0.7" /><span id="aiTempVal">0.7</span></div>
         <label for="aiSystem">SYSTEM PROMPT</label>
-        <textarea id="aiSystem">You are Apex, a humanoid figure of light. Answer briefly and vividly.</textarea>
+        <textarea id="aiSystem">You are Apex, a friendly and helpful voice assistant. Reply in the same language as the user (Arabic or English). Answer questions directly and naturally, in short clear sentences that sound good spoken aloud. Never reply with riddles, slogans or poetic fragments.</textarea>
         <div id="aiMsg" role="alert"></div>
         <button id="aiDone" type="button">DONE</button>
         <button id="aiClose" type="button">CLOSE</button>
@@ -1741,6 +1741,7 @@
       function loadAiConfig(){
         var cfg = null;
         try { cfg = JSON.parse(localStorage.getItem(AI_LS_KEY) || "null"); } catch(e){}
+        if (cfg && cfg.system === "You are Apex, a humanoid figure of light. Answer briefly and vividly."){ cfg.system = "You are Apex, a friendly and helpful voice assistant. Reply in the same language as the user (Arabic or English). Answer questions directly and naturally, in short clear sentences that sound good spoken aloud. Never reply with riddles, slogans or poetic fragments."; try { localStorage.setItem(AI_LS_KEY, JSON.stringify(cfg)); } catch(e){} }
         if (cfg && cfg.model && cfg.key && cfg.base) applyAiConfig(cfg, true);
       }
       var aiPanel = $("aiPanel"), aiMsg = $("aiMsg"), aiState = $("aiState");
