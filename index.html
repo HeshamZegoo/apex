@@ -382,7 +382,7 @@
         <label for="aiTemp">TEMPERATURE</label>
         <div id="aiTempRow"><input id="aiTemp" type="range" min="0" max="2" step="0.1" value="0.7" /><span id="aiTempVal">0.7</span></div>
         <label for="aiSystem">SYSTEM PROMPT</label>
-        <textarea id="aiSystem">You are Apex, a friendly and helpful voice assistant. Reply in the same language as the user (Arabic or English). Answer questions directly and naturally, in short clear sentences that sound good spoken aloud. Never reply with riddles, slogans or poetic fragments.</textarea>
+        <textarea id="aiSystem">You are Apex, a friendly and helpful voice assistant. Always reply in the same language as the user. If the user speaks Arabic, reply in natural Egyptian colloquial Arabic — the way people actually talk in Cairo — not formal Arabic. If the user speaks English, reply in English. Answer directly and naturally in short, clear sentences that sound good spoken aloud. Never reply with riddles, slogans or poetic fragments.</textarea>
         <div id="aiMsg" role="alert"></div>
         <button id="aiDone" type="button">DONE</button>
         <button id="aiClose" type="button">CLOSE</button>
@@ -1548,6 +1548,7 @@
       }
       function flashStatus(text, ms){ statusOverrideText = text; statusHoldUntil = performance.now() + (ms || 4000); statusEl.textContent = text; }
       $("micBtn").addEventListener("click", function(){
+        if (window.__apexPrimeTTS) window.__apexPrimeTTS();
         if (S.micOn){ stopMic(); if (S.state === "speaking" || S.state === "listening") setState("idle"); return; }
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ flashStatus("STATUS: NO MICROPHONE ACCESS IN THIS BROWSER", 9000); return; }
         var micSettled = false;
@@ -1741,7 +1742,7 @@
       function loadAiConfig(){
         var cfg = null;
         try { cfg = JSON.parse(localStorage.getItem(AI_LS_KEY) || "null"); } catch(e){}
-        if (cfg && cfg.system === "You are Apex, a humanoid figure of light. Answer briefly and vividly."){ cfg.system = "You are Apex, a friendly and helpful voice assistant. Reply in the same language as the user (Arabic or English). Answer questions directly and naturally, in short clear sentences that sound good spoken aloud. Never reply with riddles, slogans or poetic fragments."; try { localStorage.setItem(AI_LS_KEY, JSON.stringify(cfg)); } catch(e){} }
+        if (cfg && (cfg.system === "You are Apex, a humanoid figure of light. Answer briefly and vividly." || cfg.system === "You are Apex, a friendly and helpful voice assistant. Reply in the same language as the user (Arabic or English). Answer questions directly and naturally, in short clear sentences that sound good spoken aloud. Never reply with riddles, slogans or poetic fragments.")){ cfg.system = "You are Apex, a friendly and helpful voice assistant. Always reply in the same language as the user. If the user speaks Arabic, reply in natural Egyptian colloquial Arabic — the way people actually talk in Cairo — not formal Arabic. If the user speaks English, reply in English. Answer directly and naturally in short, clear sentences that sound good spoken aloud. Never reply with riddles, slogans or poetic fragments."; try { localStorage.setItem(AI_LS_KEY, JSON.stringify(cfg)); } catch(e){} }
         if (cfg && cfg.model && cfg.key && cfg.base) applyAiConfig(cfg, true);
       }
       var aiPanel = $("aiPanel"), aiMsg = $("aiMsg"), aiState = $("aiState");
@@ -1844,7 +1845,7 @@
           try {
             var synth = window.speechSynthesis;
             if (synth && typeof SpeechSynthesisUtterance !== "undefined"){
-              var u0 = new SpeechSynthesisUtterance(" ");
+              var u0 = new SpeechSynthesisUtterance("جاهز");
               u0.volume = 0;
               synth.speak(u0);
               if (synth.getVoices && synth.getVoices().length === 0 && synth.addEventListener) synth.addEventListener("voiceschanged", function(){});
@@ -1853,6 +1854,7 @@
           document.removeEventListener("pointerdown", prime, true);
           document.removeEventListener("touchend", prime, true);
         }
+        window.__apexPrimeTTS = prime;
         document.addEventListener("pointerdown", prime, true);
         document.addEventListener("touchend", prime, true);
       })();
@@ -1906,7 +1908,7 @@
         var parts = String(text).replace(/\s+/g, " ").match(/[^.!?؟…\n]+[.!?؟…]*\s*/g) || [String(text)];
         var cur = "";
         for (var pi = 0; pi < parts.length; pi++){
-          if ((cur + parts[pi]).length > 180 && cur){ chunks.push(cur); cur = ""; }
+          if ((cur + parts[pi]).length > 320 && cur){ chunks.push(cur); cur = ""; }
           cur += parts[pi];
         }
         if (cur.trim()) chunks.push(cur);
@@ -1962,6 +1964,7 @@
         });
       }
       function askAI(){
+        if (window.__apexPrimeTTS) window.__apexPrimeTTS();
         var q = $("chatInput").value.trim();
         if (!q) return;
         $("chatInput").value = "";
