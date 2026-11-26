@@ -1,0 +1,65 @@
+{
+  "author": {
+    "name": "Apex"
+  },
+  "build": {
+    "appId": "com.apex.desktop",
+    "appImage": {
+      "artifactName": "Apex-${version}.AppImage"
+    },
+    "deb": {
+      "artifactName": "Apex-${version}-ubuntu.deb"
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "app/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "category": "Utility",
+      "description": "APEX-UI orb interface and Apex Humanoid cinematic experience. Works offline; AI features use the user's own API key and require internet.",
+      "synopsis": "Apex desktop experience",
+      "target": [
+        "deb",
+        "AppImage"
+      ],
+      "maintainer": "Apex <apex@localhost>"
+    },
+    "nsis": {
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "oneClick": false,
+      "shortcutName": "Apex"
+    },
+    "portable": {
+      "artifactName": "Apex-Portable-${version}.exe"
+    },
+    "productName": "Apex",
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    }
+  },
+  "description": "Apex — APEX-UI orb interface and Apex Humanoid experience as a desktop app",
+  "license": "MIT",
+  "main": "main.js",
+  "name": "apex-desktop",
+  "scripts": {
+    "build:all": "electron-builder --win nsis portable --linux deb AppImage",
+    "build:linux": "electron-builder --linux deb AppImage",
+    "build:win": "electron-builder --win nsis portable",
+    "start": "electron ."
+  },
+  "version": "1.0.0",
+  "devDependencies": {
+    "electron": "^45.5.0",
+    "electron-builder": "^26.18.0"
+  },
+  "homepage": "https://github.com/owner/apex"
+}
