@@ -1542,7 +1542,10 @@
       $("micBtn").addEventListener("click", function(){
         if (S.micOn){ stopMic(); if (S.state === "speaking" || S.state === "listening") setState("idle"); return; }
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ statusEl.textContent = "STATUS: NO MICROPHONE ACCESS IN THIS BROWSER"; return; }
+        var micSettled = false;
+        var micWatchdog = setTimeout(function(){ if (!micSettled && !S.micOn) statusEl.textContent = "STATUS: MIC UNAVAILABLE IN THIS BROWSER \u2014 OPEN THIS PAGE IN SAFARI"; }, 5000);
         navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+          micSettled = true; clearTimeout(micWatchdog);
           micStream = stream;
           var Ctor = window.AudioContext || window.webkitAudioContext;
           micCtx = new Ctor();
@@ -1564,7 +1567,7 @@
           setState("listening");
           statusEl.textContent = "STATUS: LISTENING";
           startVoice();
-        }).catch(function(){ statusEl.textContent = "STATUS: MIC BLOCKED — ALLOW MICROPHONE ACCESS"; });
+        }).catch(function(){ micSettled = true; clearTimeout(micWatchdog); statusEl.textContent = "STATUS: MIC BLOCKED — ALLOW MICROPHONE ACCESS"; });
       });
 
       /* ============================== camera / hand gesture ============================== */
