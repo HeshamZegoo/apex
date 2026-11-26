@@ -2116,7 +2116,16 @@
       }
       function startVoice(){
         voiceWanted = true; voiceGen++;
-        if (sttMode === "webspeech"){ restartRecog(); return; }
+        if (sttMode === "webspeech"){ startWebSpeech(); return; }
+        // Real browsers (Safari/Chrome): the system speech recognizer understands
+        // Arabic far better than the tiny local Whisper model, so use it first there.
+        // Whisper stays the engine inside Electron, where Web Speech is dead.
+        if (!IS_ELECTRON && hasWebSpeech()){
+          sttMode = "webspeech";
+          statusEl.textContent = "STATUS: LISTENING";
+          startWebSpeech();
+          return;
+        }
         sttMode = "whisper";
         if (typeof MediaRecorder === "undefined"){
           sttFailed = true;
