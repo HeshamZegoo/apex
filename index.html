@@ -1809,10 +1809,32 @@
         });
       }
       /* ---- spoken reply: TTS drives the speaking face, then we listen again ---- */
-      var ttsDrive = false, ttsTimer = 0;
+      // iOS: speechSynthesis stays silent until a speak() happens inside a user gesture — prime it on the first taps
+      (function(){
+        var primed = false;
+        function prime(){
+          if (primed) return; primed = true;
+          try {
+            var synth = window.speechSynthesis;
+            if (synth && typeof SpeechSynthesisUtterance !== "undefined"){
+              var u0 = new SpeechSynthesisUtterance(" ");
+              u0.volume = 0;
+              synth.speak(u0);
+              if (synth.getVoices && synth.getVoices().length === 0 && synth.addEventListener) synth.addEventListener("voiceschanged", function(){});
+            }
+          } catch(e){}
+          document.removeEventListener("pointerdown", prime, true);
+          document.removeEventListener("touchend", prime, true);
+        }
+        document.addEventListener("pointerdown", prime, true);
+        document.addEventListener("touchend", prime, true);
+      })();
+
+      var ttsDrive = false, ttsTimer = 0, ttsResumeTimer = 0;
       function endSpeak(){
         ttsDrive = false;
         if (ttsTimer){ clearInterval(ttsTimer); ttsTimer = 0; }
+        if (ttsResumeTimer){ clearInterval(ttsResumeTimer); ttsResumeTimer = 0; }
         voiceBusy = false;
         if (voiceWanted){ setState("listening", true); statusEl.textContent = "STATUS: LISTENING"; restartRecog(); }
         else if (S.state === "speaking") setState("idle", true);
@@ -1828,17 +1850,50 @@
           setTimeout(function(){ if (ttsTimer){ clearInterval(ttsTimer); ttsTimer = 0; } endSpeak(); }, Math.max(2200, Math.min(12000, text.length * 55)));
           return;
         }
-        try { synth.cancel(); } catch(e){}
-        var u = new SpeechSynthesisUtterance(text);
-        u.lang = navigator.language || "en-US";
         ttsDrive = true;
         ttsTimer = setInterval(function(){ S.energy = 0.45 + 0.35 * Math.abs(Math.sin(performance.now() / 130)); }, 90);
         var done = false;
-        function finish(){ if (done) return; done = true; endSpeak(); }
-        u.onend = finish; u.onerror = finish;
-        // safety net: never stay stuck in speaking if the utterance never reports back
-        setTimeout(function(){ if (ttsDrive && S.state === "speaking") finish(); }, Math.max(8000, Math.min(60000, text.length * 180)));
-        synth.speak(u);
+        function finish(){ if (done) return; done = true; if (ttsResumeTimer){ clearInterval(ttsResumeTimer); ttsResumeTimer = 0; } endSpeak(); }
+        // iOS Safari drops an utterance queued in the same tick as cancel():
+        // only cancel when something is actually playing, then speak a beat later.
+        var wasActive = false;
+        try { wasActive = !!(synth.speaking || synth.pending); if (wasActive) synth.cancel(); } catch(e){}
+        // pick a voice that matches the reply's language (Arabic replies need an Arabic voice when one exists)
+        var isAr = /[\u0600-\u06FF]/.test(text);
+        var wantLang = isAr ? "ar-EG" : (navigator.language || "en-US");
+        var voice = null;
+        try {
+          var vs = synth.getVoices() || [];
+          for (var vi = 0; vi < vs.length; vi++){ if (vs[vi].lang && vs[vi].lang.toLowerCase().indexOf(wantLang.slice(0, 2)) === 0){ voice = vs[vi]; break; } }
+        } catch(e){}
+        // split into sentence-sized chunks: iOS cuts or silences long single utterances
+        var chunks = [];
+        var parts = String(text).replace(/\s+/g, " ").match(/[^.!?؟…\n]+[.!?؟…]*\s*/g) || [String(text)];
+        var cur = "";
+        for (var pi = 0; pi < parts.length; pi++){
+          if ((cur + parts[pi]).length > 180 && cur){ chunks.push(cur); cur = ""; }
+          cur += parts[pi];
+        }
+        if (cur.trim()) chunks.push(cur);
+        if (!chunks.length) chunks = [String(text)];
+        var ci = 0;
+        function speakNext(){
+          if (done) return;
+          if (ci >= chunks.length){ finish(); return; }
+          var u = new SpeechSynthesisUtterance(chunks[ci]);
+          u.lang = wantLang;
+          if (voice) u.voice = voice;
+          u.onend = function(){ ci++; speakNext(); };
+          u.onerror = function(){ ci++; speakNext(); };
+          try { synth.resume(); } catch(e){}
+          synth.speak(u);
+        }
+        // iOS also stalls long speech unless resume() is poked periodically
+        if (ttsResumeTimer){ clearInterval(ttsResumeTimer); }
+        ttsResumeTimer = setInterval(function(){ try { if (synth.speaking) synth.resume(); } catch(e){} }, 4000);
+        // safety net: never stay stuck in speaking if utterances never report back
+        setTimeout(function(){ if (ttsDrive && S.state === "speaking") finish(); }, Math.max(10000, Math.min(90000, text.length * 220)));
+        setTimeout(speakNext, wasActive ? 90 : 0);
       }
       function submitQuestion(q){
         q = (q || "").trim();
