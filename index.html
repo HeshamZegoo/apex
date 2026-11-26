@@ -1884,6 +1884,7 @@
           var u = new SpeechSynthesisUtterance(chunks[ci]);
           u.lang = wantLang;
           if (voice) u.voice = voice;
+          u.rate = 0.95;
           u.onend = function(){ ci++; speakNext(); };
           u.onerror = function(){ ci++; speakNext(); };
           try { synth.resume(); } catch(e){}
@@ -2042,7 +2043,7 @@
         blobTo16k(blob).then(function(audio){
           if (!audio || !audio.length) throw new Error("empty recording");
           return loadStt().then(function(pipe){
-            return pipe(audio, { chunk_length_s: 30, stride_length_s: 5, task: "transcribe" });
+            return pipe(audio, { chunk_length_s: 30, stride_length_s: 5, task: "transcribe", language: "arabic" });
           });
         }).then(function(out){
           if (gen !== voiceGen){ voiceBusy = false; return; } // mic turned off meanwhile — drop it
@@ -2073,7 +2074,7 @@
         recog = new Rec();
         recog.continuous = true;
         recog.interimResults = true;
-        recog.lang = navigator.language || "en-US";
+        recog.lang = "ar-EG"; // Hesham speaks Egyptian Arabic — never follow the phone UI language
         recog.onresult = function(ev){
           var finalText = "", interim = "";
           for (var i = ev.resultIndex; i < ev.results.length; i++){
