@@ -389,6 +389,48 @@
         <div id="aiTempRow"><input id="aiTemp" type="range" min="0" max="2" step="0.1" value="0.7" /><span id="aiTempVal">0.7</span></div>
         <label for="aiSystem">SYSTEM PROMPT</label>
         <textarea id="aiSystem">You are Apex, a friendly voice assistant. Always reply in the same language as the user. If the user speaks Arabic, you MUST reply in Egyptian colloquial Arabic (Masri dialect) only — never in formal Arabic (fusha). Talk like a normal person from Cairo. Examples of your style: User: عامل ايه؟ -> Apex: الحمد لله تمام، انت عامل ايه؟ User: ايه الاخبار؟ -> Apex: كله تمام، الدنيا ماشية. تحب نتكلم في ايه؟ User: انت مين؟ -> Apex: أنا أبيكس، مساعدك الصوتي. اسألني أي حاجة وأنا أرد عليك على طول. If the user speaks English, reply in natural English. Keep every reply short: one or two sentences, clear and direct, good for speaking aloud. Never use riddles, slogans or poetic fragments.</textarea>
+        <div class="apTitle" style="margin-top:18px">VOICE</div>
+        <div class="apSub">Spoken replies come from a voice model you choose below — pick a provider, add its key, press DONE. The chat model above stays the brain.</div>
+        <label for="aiVoiceEngine">VOICE MODEL</label>
+        <select id="aiVoiceEngine">
+          <option value="">Choose voice model</option>
+          <option value="fish">Fish Audio</option>
+          <option value="elevenlabs">ElevenLabs</option>
+          <option value="gemini">Gemini</option>
+          <option value="custom">Custom TTS (OpenAI-compatible)</option>
+        </select>
+        <label for="fishBase">FISH BASE URL</label>
+        <input id="fishBase" type="url" value="https://api.fish.audio" autocomplete="off" />
+        <label for="fishKey">FISH AUDIO API KEY</label>
+        <input id="fishKey" type="password" placeholder="Fish API key" autocomplete="off" />
+        <label for="fishModel">FISH MODEL</label>
+        <input id="fishModel" type="text" value="s2.1-pro-free" autocomplete="off" />
+        <label for="fishRef">FISH VOICE REFERENCE ID (OPTIONAL)</label>
+        <input id="fishRef" type="text" placeholder="empty = Fish default voice" autocomplete="off" />
+        <label for="elBase">ELEVENLABS BASE URL</label>
+        <input id="elBase" type="url" value="https://api.elevenlabs.io" autocomplete="off" />
+        <label for="elKey">ELEVENLABS API KEY</label>
+        <input id="elKey" type="password" placeholder="ElevenLabs API key" autocomplete="off" />
+        <label for="elModel">ELEVENLABS MODEL</label>
+        <input id="elModel" type="text" value="eleven_multilingual_v2" autocomplete="off" />
+        <label for="elVoice">ELEVENLABS VOICE ID</label>
+        <input id="elVoice" type="text" placeholder="voice_id (required)" autocomplete="off" />
+        <label for="gemBase">GEMINI BASE URL</label>
+        <input id="gemBase" type="url" value="https://generativelanguage.googleapis.com" autocomplete="off" />
+        <label for="gemKey">GEMINI API KEY</label>
+        <input id="gemKey" type="password" placeholder="Gemini API key" autocomplete="off" />
+        <label for="gemModel">GEMINI MODEL</label>
+        <input id="gemModel" type="text" value="gemini-2.5-flash-preview-tts" autocomplete="off" />
+        <label for="gemVoice">GEMINI VOICE</label>
+        <input id="gemVoice" type="text" value="Kore" autocomplete="off" />
+        <label for="ttsBase">CUSTOM TTS BASE URL</label>
+        <input id="ttsBase" type="url" placeholder="https://your-tts.example/v1" autocomplete="off" />
+        <label for="ttsKey">CUSTOM TTS API KEY</label>
+        <input id="ttsKey" type="password" placeholder="Custom TTS API key" autocomplete="off" />
+        <label for="ttsModel">CUSTOM TTS MODEL</label>
+        <input id="ttsModel" type="text" placeholder="model name" autocomplete="off" />
+        <label for="ttsVoice">CUSTOM TTS VOICE</label>
+        <input id="ttsVoice" type="text" placeholder="voice name" autocomplete="off" />
         <div id="aiMsg" role="alert"></div>
         <button id="aiDone" type="button">DONE</button>
         <button id="aiClose" type="button">CLOSE</button>
@@ -1559,7 +1601,6 @@
       }
       function flashStatus(text, ms){ statusOverrideText = text; statusHoldUntil = performance.now() + (ms || 4000); statusEl.textContent = text; }
       $("micBtn").addEventListener("click", function(){
-        if (window.__apexPrimeTTS) window.__apexPrimeTTS();
         if (S.micOn){ stopMic(); if (S.state === "speaking" || S.state === "listening") setState("idle"); return; }
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ flashStatus("STATUS: NO MICROPHONE ACCESS IN THIS BROWSER", 9000); return; }
         var micSettled = false;
@@ -1743,6 +1784,23 @@
         $("aiTemp").value = (cfg.temp == null ? 0.7 : cfg.temp);
         $("aiTempVal").textContent = Number($("aiTemp").value).toFixed(1);
         $("aiSystem").value = cfg.system || "";
+        $("aiVoiceEngine").value = (cfg.voiceEngine === "fish" || cfg.voiceEngine === "elevenlabs" || cfg.voiceEngine === "gemini" || cfg.voiceEngine === "custom") ? cfg.voiceEngine : "";
+        $("fishBase").value = cfg.fishBase || "https://api.fish.audio";
+        $("fishKey").value = cfg.fishKey || "";
+        $("fishModel").value = cfg.fishModel || "s2.1-pro-free";
+        $("fishRef").value = cfg.fishRef || "";
+        $("elBase").value = cfg.elBase || "https://api.elevenlabs.io";
+        $("elKey").value = cfg.elKey || "";
+        $("elModel").value = cfg.elModel || "eleven_multilingual_v2";
+        $("elVoice").value = cfg.elVoice || "";
+        $("gemBase").value = cfg.gemBase || "https://generativelanguage.googleapis.com";
+        $("gemKey").value = cfg.gemKey || "";
+        $("gemModel").value = cfg.gemModel || "gemini-2.5-flash-preview-tts";
+        $("gemVoice").value = cfg.gemVoice || "Kore";
+        $("ttsBase").value = cfg.ttsBase || "";
+        $("ttsKey").value = cfg.ttsKey || "";
+        $("ttsModel").value = cfg.ttsModel || "";
+        $("ttsVoice").value = cfg.ttsVoice || "";
         DIAG.prompt = (cfg.system || "—").slice(0, 80); if (typeof renderDiag === "function") renderDiag();
         aiMsg.textContent = "";
         aiState.textContent = "AI: " + cfg.model + " — active";
@@ -1765,18 +1823,31 @@
       $("aiClose").addEventListener("click", closeAiPanel);
       $("ttsTest").addEventListener("click", function(){
         updateVoicesDiag();
-        var synth = window.speechSynthesis;
-        if (!synth || typeof SpeechSynthesisUtterance === "undefined"){ DIAG.tts = "NOT AVAILABLE in this browser"; renderDiag(); return; }
-        try { if (synth.speaking || synth.pending) synth.cancel(); } catch(e){}
-        var u = new SpeechSynthesisUtterance("أهلاً بيك، أنا أبيكس. لو سمعت الجملة دي يبقى الصوت شغال تمام.");
-        u.lang = "ar-EG"; u.rate = 0.95;
-        try { var vs = synth.getVoices() || []; for (var i = 0; i < vs.length; i++){ if (vs[i].lang && vs[i].lang.toLowerCase().indexOf("ar") === 0){ u.voice = vs[i]; break; } } } catch(e){}
-        u.onstart = function(){ DIAG.tts = "started \u2014 you should hear it now"; renderDiag(); };
-        u.onend = function(){ DIAG.tts = "finished normally"; renderDiag(); };
-        u.onerror = function(ev){ DIAG.tts = "ERROR: " + (ev && ev.error ? ev.error : "unknown"); renderDiag(); };
-        DIAG.tts = "requested\u2026"; renderDiag();
-        setTimeout(function(){ try { synth.resume(); } catch(e){} synth.speak(u); }, 60);
+        var act = activeTts();
+        if (!act){
+          DIAG.tts = "VOICE MODEL NOT SET \u2014 OPEN AI SETTINGS"; renderDiag();
+          flashStatus("STATUS: VOICE MODEL NOT SET \u2014 OPEN AI SETTINGS", 6000);
+          return;
+        }
+        DIAG.tts = "requested (" + act.label + ")\u2026"; renderDiag();
+        stopTtsAudio();
+        var fgen = ++ttsGen;
+        act.fetcher("\u0623\u0647\u0644\u0627\u064B \u0628\u064A\u0643\u060C \u0623\u0646\u0627 \u0623\u0628\u064A\u0643\u0633. \u0644\u0648 \u0633\u0645\u0639\u062A \u0627\u0644\u062C\u0645\u0644\u0629 \u062F\u064A \u064A\u0628\u0642\u0649 \u0627\u0644\u0635\u0648\u062A \u0634\u063A\u0627\u0644 \u062A\u0645\u0627\u0645.").then(function(blob){
+          if (fgen !== ttsGen) return;
+          ttsObjUrl = URL.createObjectURL(blob);
+          var fa = new Audio(ttsObjUrl);
+          ttsAudio = fa;
+          fa.onended = function(){ DIAG.tts = "finished normally (" + act.label + ")"; renderDiag(); };
+          fa.onerror = function(){ DIAG.tts = "ERROR: " + act.label + " playback failed"; renderDiag(); };
+          var fp = fa.play();
+          DIAG.tts = "started (" + act.label + ") \u2014 you should hear it now"; renderDiag();
+          if (fp && fp.catch) fp.catch(function(){ DIAG.tts = "ERROR: " + act.label + " playback blocked"; renderDiag(); });
+        }).catch(function(err){
+          DIAG.tts = "ERROR: " + (err && err.message ? err.message : act.label + " request failed"); renderDiag();
+          flashStatus("STATUS: " + DIAG.tts, 6000);
+        });
       });
+
       $("aiProvider").addEventListener("change", function(){
         var b = PROVIDER_BASE[this.value];
         if (b) $("aiBase").value = b;
@@ -1790,7 +1861,12 @@
         if (!key){ aiMsg.textContent = "enter your API key"; $("aiKey").focus(); return; }
         if (!base){ aiMsg.textContent = "enter the API base URL"; $("aiBase").focus(); return; }
         applyAiConfig({ provider: $("aiProvider").value, model: model, key: key, base: base,
-                  temp: parseFloat($("aiTemp").value), system: $("aiSystem").value.trim() });
+                  temp: parseFloat($("aiTemp").value), system: $("aiSystem").value.trim(),
+                  voiceEngine: $("aiVoiceEngine").value,
+                  fishBase: $("fishBase").value.trim(), fishKey: $("fishKey").value.trim(), fishModel: $("fishModel").value.trim(), fishRef: $("fishRef").value.trim(),
+                  elBase: $("elBase").value.trim(), elKey: $("elKey").value.trim(), elModel: $("elModel").value.trim(), elVoice: $("elVoice").value.trim(),
+                  gemBase: $("gemBase").value.trim(), gemKey: $("gemKey").value.trim(), gemModel: $("gemModel").value.trim(), gemVoice: $("gemVoice").value.trim(),
+                  ttsBase: $("ttsBase").value.trim(), ttsKey: $("ttsKey").value.trim(), ttsModel: $("ttsModel").value.trim(), ttsVoice: $("ttsVoice").value.trim() });
         saveAiConfig();
         closeAiPanel();
         if (S.entered){ statusEl.textContent = "STATUS: " + S.state.toUpperCase() + " · AI READY"; if (AC && S.soundOn) stateBlip("listening"); }
@@ -1848,36 +1924,14 @@
           return String(text).trim();
         });
       }
-      /* ---- spoken reply: TTS drives the speaking face, then we listen again ---- */
-      // iOS: speechSynthesis stays silent until a speak() happens inside a user gesture — prime it on the first taps
-      (function(){
-        var primed = false;
-        function prime(){
-          if (primed) return; primed = true;
-          try {
-            var synth = window.speechSynthesis;
-            if (synth && typeof SpeechSynthesisUtterance !== "undefined"){
-              var u0 = new SpeechSynthesisUtterance("جاهز");
-              u0.volume = 0;
-              synth.speak(u0);
-              if (synth.getVoices && synth.getVoices().length === 0 && synth.addEventListener) synth.addEventListener("voiceschanged", function(){});
-            }
-          } catch(e){}
-          document.removeEventListener("pointerdown", prime, true);
-          document.removeEventListener("touchend", prime, true);
-        }
-        window.__apexPrimeTTS = prime;
-        document.addEventListener("pointerdown", prime, true);
-        document.addEventListener("touchend", prime, true);
-      })();
+      /* ---- spoken replies come from the chosen voice model (AI SETTINGS -> VOICE) ---- */
 
       var ttsDrive = false, ttsTimer = 0, ttsResumeTimer = 0;
       /* ---- voice diagnostics: readable in AI SETTINGS, so voice problems are never silent ---- */
       var DIAG = { browser: "—", engine: "—", heard: "—", voices: "—", arVoice: "—", tts: "—", prompt: "—", voiceUsed: "—" };
       (function(){ var ua = navigator.userAgent || ""; DIAG.browser = /Electron/i.test(ua) ? "desktop app" : ((/Safari/i.test(ua) && !/Chrome|CriOS|FxiOS/i.test(ua)) ? "Safari" : ((/AppleWebKit/i.test(ua) && !/Safari/i.test(ua)) ? "in-app webview" : "other browser")); })();
       function renderDiag(){ var el = $("diagText"); if (!el) return; el.textContent = "VOICE CHECK\nBrowser: " + DIAG.browser + "\nHearing engine: " + DIAG.engine + "\nLast heard: " + DIAG.heard + "\nVoices on device: " + DIAG.voices + " \u00B7 Arabic voice: " + DIAG.arVoice + "\nSpeech: " + DIAG.tts + "\nVoice used: " + DIAG.voiceUsed + "\nPrompt: " + DIAG.prompt; }
-      function updateVoicesDiag(){ try { var vs = window.speechSynthesis ? speechSynthesis.getVoices() : []; DIAG.voices = String(vs.length); DIAG.arVoice = "no"; for (var i = 0; i < vs.length; i++){ if (vs[i].lang && vs[i].lang.toLowerCase().indexOf("ar") === 0){ DIAG.arVoice = "yes (" + vs[i].lang + ")"; break; } } } catch(e){ DIAG.voices = "error"; } renderDiag(); }
-      if (window.speechSynthesis && speechSynthesis.addEventListener) speechSynthesis.addEventListener("voiceschanged", updateVoicesDiag);
+      function updateVoicesDiag(){ renderDiag(); }
       renderDiag();
       function endSpeak(){
         ttsDrive = false;
@@ -1887,46 +1941,28 @@
         if (voiceWanted){ setState("listening", true); statusEl.textContent = "STATUS: LISTENING"; restartRecog(); }
         else if (S.state === "speaking") setState("idle", true);
       }
-      function speakReply(text){
-        setState("speaking", true); statusEl.textContent = "STATUS: SPEAKING";
-        var synth = window.speechSynthesis;
-        if (!synth || typeof SpeechSynthesisUtterance === "undefined"){
-          DIAG.tts = "NOT AVAILABLE in this browser"; renderDiag();
-          // no TTS in this browser: keep the speaking face for a readable beat, then move on
-          ttsDrive = true;
-          var t0 = performance.now();
-          ttsTimer = setInterval(function(){ S.energy = 0.45 + 0.35 * Math.abs(Math.sin(performance.now() / 130)); }, 90);
-          setTimeout(function(){ if (ttsTimer){ clearInterval(ttsTimer); ttsTimer = 0; } endSpeak(); }, Math.max(2200, Math.min(12000, text.length * 55)));
-          return;
-        }
-        ttsDrive = true;
-        ttsTimer = setInterval(function(){ S.energy = 0.45 + 0.35 * Math.abs(Math.sin(performance.now() / 130)); }, 90);
-        var done = false;
-        function finish(){ if (done) return; done = true; if (ttsResumeTimer){ clearInterval(ttsResumeTimer); ttsResumeTimer = 0; } endSpeak(); }
-        // iOS Safari drops an utterance queued in the same tick as cancel():
-        // only cancel when something is actually playing, then speak a beat later.
-        var wasActive = false;
-        try { wasActive = !!(synth.speaking || synth.pending); if (wasActive) synth.cancel(); } catch(e){}
-        // pick a voice that matches the reply's language (Arabic replies need an Arabic voice when one exists)
+      /* ---- Voice-model TTS (AI SETTINGS -> VOICE): spoken replies come from
+         the provider the user picked — Fish Audio, ElevenLabs, Gemini or a
+         custom OpenAI-compatible TTS endpoint. Each provider keeps its own
+         base URL, key, model and voice in the config. Replies are split
+         into sentence chunks, fetched in order and played back; the
+         SPEAKING state is driven by playback. Any failure flashes the HTTP
+         status and the reply simply is not spoken — there is deliberately
+         no device-voice fallback. ---- */
+      var FISH_BASE_DEFAULT = "https://api.fish.audio";
+      var EL_BASE_DEFAULT = "https://api.elevenlabs.io";
+      var GEM_BASE_DEFAULT = "https://generativelanguage.googleapis.com";
+      var ttsAudio = null, ttsObjUrl = null, ttsGen = 0;
+      function cfgBase(v, dflt){ var s = String(v || "").replace(/\/+$/, ""); return s || dflt; }
+      function fishModel(){ return (AICFG && AICFG.fishModel) ? AICFG.fishModel : "s2.1-pro-free"; }
+      function fishEnabled(){ return !!(AICFG && AICFG.voiceEngine === "fish" && AICFG.fishKey); }
+      function elEnabled(){ return !!(AICFG && AICFG.voiceEngine === "elevenlabs" && AICFG.elKey && AICFG.elVoice); }
+      function gemEnabled(){ return !!(AICFG && AICFG.voiceEngine === "gemini" && AICFG.gemKey); }
+      function customEnabled(){ return !!(AICFG && AICFG.voiceEngine === "custom" && AICFG.ttsBase && AICFG.ttsKey && AICFG.ttsModel); }
+      function splitSpeakChunks(text){
         var isAr = /[\u0600-\u06FF]/.test(text);
-        var wantLang = isAr ? "ar-EG" : (navigator.language || "en-US");
-        var voice = null;
-        try {
-          var vs = synth.getVoices() || [];
-          var prefNames = ["maged", "amira", "laila", "tariq", "salma", "majed"];
-          var firstAr = null, namedAr = null;
-          for (var vi = 0; vi < vs.length; vi++){
-            var vl = (vs[vi].lang || "").toLowerCase(), vn = (vs[vi].name || "").toLowerCase();
-            if (isAr && vl.indexOf("ar-eg") === 0){ voice = vs[vi]; break; }
-            if (isAr && vl.indexOf("ar") === 0){ if (!firstAr) firstAr = vs[vi]; for (var ni = 0; ni < prefNames.length; ni++){ if (vn.indexOf(prefNames[ni]) >= 0) namedAr = vs[vi]; } }
-            if (!isAr && vl.indexOf(wantLang.slice(0, 2).toLowerCase()) === 0){ voice = vs[vi]; break; }
-          }
-          if (!voice && isAr) voice = namedAr || firstAr;
-        } catch(e){}
-        // split into sentence-sized chunks: iOS cuts or silences long single utterances
-        var chunks = [];
-        var parts = String(text).replace(/\s+/g, " ").match(/[^.!?؟…\n]+[.!?؟…]*\s*/g) || [String(text)];
-        var cur = "";
+        var parts = String(text).replace(/\s+/g, " ").match(/[^.!?\u061F\u2026\n]+[.!?\u061F\u2026]*\s*/g) || [String(text)];
+        var chunks = [], cur = "";
         for (var pi = 0; pi < parts.length; pi++){
           var cap = isAr ? 140 : 320;
           if ((cur + parts[pi]).length > cap && cur){ chunks.push(cur); cur = ""; }
@@ -1934,25 +1970,139 @@
         }
         if (cur.trim()) chunks.push(cur);
         if (!chunks.length) chunks = [String(text)];
-        var ci = 0;
-        function speakNext(){
-          if (done) return;
-          if (ci >= chunks.length){ finish(); return; }
-          var u = new SpeechSynthesisUtterance(chunks[ci]);
-          u.lang = wantLang;
-          if (voice) u.voice = voice;
-          DIAG.voiceUsed = voice ? (voice.name + " (" + voice.lang + ")") : "browser default for " + wantLang; renderDiag();
-          u.rate = 1.0;
-          u.onstart = function(){ if (ci === 0){ DIAG.tts = "started"; renderDiag(); } };
-          u.onend = function(){ ci++; speakNext(); };
-          u.onerror = function(ev){ if (ci === 0){ DIAG.tts = "ERROR: " + (ev && ev.error ? ev.error : "unknown"); renderDiag(); } ci++; speakNext(); };
-          try { synth.resume(); } catch(e){}
-          synth.speak(u);
+        return chunks;
+      }
+      function ttsHttpError(label, resp){
+        return resp.text().then(function(raw){
+          var em = raw ? raw.trim().slice(0, 200) : "";
+          throw new Error(label + " HTTP " + resp.status + (em ? " \u2014 " + em : ""));
+        }, function(){ throw new Error(label + " HTTP " + resp.status); });
+      }
+      function fishFetchChunk(text){
+        var body = { text: text, format: "mp3" };
+        if (AICFG.fishRef) body.reference_id = AICFG.fishRef;
+        return fetch(cfgBase(AICFG.fishBase, FISH_BASE_DEFAULT) + "/v1/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + AICFG.fishKey, "model": fishModel() },
+          body: JSON.stringify(body)
+        }).then(function(resp){
+          if (!resp.ok) return ttsHttpError("Fish TTS", resp);
+          return resp.blob();
+        }, function(){ throw new Error("Fish TTS unreachable \u2014 check connection"); });
+      }
+      function elFetchChunk(text){
+        var model = AICFG.elModel || "eleven_multilingual_v2";
+        return fetch(cfgBase(AICFG.elBase, EL_BASE_DEFAULT) + "/v1/text-to-speech/" + encodeURIComponent(AICFG.elVoice), {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "xi-api-key": AICFG.elKey },
+          body: JSON.stringify({ text: text, model_id: model })
+        }).then(function(resp){
+          if (!resp.ok) return ttsHttpError("ElevenLabs TTS", resp);
+          return resp.blob();
+        }, function(){ throw new Error("ElevenLabs TTS unreachable \u2014 check connection"); });
+      }
+      function pcm16ToWavBlob(b64){
+        var bin = atob(b64), len = bin.length, i;
+        var bytes = new Uint8Array(len);
+        for (i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i) & 0xff;
+        var sampleRate = 24000, dataLen = bytes.length;
+        var header = new ArrayBuffer(44), dv = new DataView(header);
+        function ws(off, s){ for (var j = 0; j < s.length; j++) dv.setUint8(off + j, s.charCodeAt(j)); }
+        ws(0, "RIFF"); dv.setUint32(4, 36 + dataLen, true); ws(8, "WAVE");
+        ws(12, "fmt "); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+        dv.setUint32(24, sampleRate, true); dv.setUint32(28, sampleRate * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true);
+        ws(36, "data"); dv.setUint32(40, dataLen, true);
+        return new Blob([header, bytes], { type: "audio/wav" });
+      }
+      function gemFetchChunk(text){
+        var model = AICFG.gemModel || "gemini-2.5-flash-preview-tts";
+        var voice = AICFG.gemVoice || "Kore";
+        var body = { contents: [{ parts: [{ text: text }] }],
+          generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } } } };
+        return fetch(cfgBase(AICFG.gemBase, GEM_BASE_DEFAULT) + "/v1beta/models/" + encodeURIComponent(model) + ":generateContent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": AICFG.gemKey },
+          body: JSON.stringify(body)
+        }).then(function(resp){
+          if (!resp.ok) return ttsHttpError("Gemini TTS", resp);
+          return resp.json();
+        }, function(){ throw new Error("Gemini TTS unreachable \u2014 check connection"); }).then(function(data){
+          var d = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].inlineData && data.candidates[0].content.parts[0].inlineData.data;
+          if (!d) throw new Error("Gemini TTS: no audio in response");
+          return pcm16ToWavBlob(d);
+        });
+      }
+      function customFetchChunk(text){
+        var body = { model: AICFG.ttsModel, input: text, response_format: "mp3" };
+        if (AICFG.ttsVoice) body.voice = AICFG.ttsVoice;
+        return fetch(String(AICFG.ttsBase).replace(/\/+$/, "") + "/audio/speech", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + AICFG.ttsKey },
+          body: JSON.stringify(body)
+        }).then(function(resp){
+          if (!resp.ok) return ttsHttpError("Custom TTS", resp);
+          return resp.blob();
+        }, function(){ throw new Error("Custom TTS unreachable \u2014 check connection"); });
+      }
+      function stopTtsAudio(){
+        ttsGen++;
+        if (ttsAudio){ try { ttsAudio.pause(); } catch(e){} ttsAudio = null; }
+        if (ttsObjUrl){ try { URL.revokeObjectURL(ttsObjUrl); } catch(e){} ttsObjUrl = null; }
+      }
+      function speakReplyVia(text, fetcher, label, voiceDesc){
+        setState("speaking", true); statusEl.textContent = "STATUS: SPEAKING";
+        ttsDrive = true;
+        if (ttsTimer) clearInterval(ttsTimer);
+        ttsTimer = setInterval(function(){ S.energy = 0.45 + 0.35 * Math.abs(Math.sin(performance.now() / 130)); }, 90);
+        var gen = ++ttsGen, done = false;
+        var safety = setTimeout(function(){ if (ttsDrive && S.state === "speaking") finish(); }, Math.max(15000, Math.min(120000, String(text).length * 220)));
+        function finish(){ if (done) return; done = true; clearTimeout(safety); endSpeak(); }
+        function failover(err){
+          if (done || gen !== ttsGen) return;
+          done = true; clearTimeout(safety);
+          flashStatus("STATUS: " + (err && err.message ? err.message : label + " failed"), 6000);
+          DIAG.tts = label + " error \u2014 reply not spoken"; renderDiag();
+          endSpeak();
         }
-        if (ttsResumeTimer){ clearInterval(ttsResumeTimer); ttsResumeTimer = 0; }
-        // safety net: never stay stuck in speaking if utterances never report back
-        setTimeout(function(){ if (ttsDrive && S.state === "speaking") finish(); }, Math.max(10000, Math.min(90000, text.length * 220)));
-        setTimeout(speakNext, wasActive ? 90 : 0);
+        var chunks = splitSpeakChunks(text), ci = 0;
+        function playNext(){
+          if (done || gen !== ttsGen) return;
+          if (ci >= chunks.length){ finish(); return; }
+          fetcher(chunks[ci]).then(function(blob){
+            if (done || gen !== ttsGen) return;
+            ttsObjUrl = URL.createObjectURL(blob);
+            var a = new Audio(ttsObjUrl);
+            ttsAudio = a;
+            if (ci === 0){ DIAG.tts = "started (" + label + ")"; DIAG.voiceUsed = voiceDesc; renderDiag(); }
+            ci++;
+            a.onended = function(){ if (ttsObjUrl){ try { URL.revokeObjectURL(ttsObjUrl); } catch(e){} ttsObjUrl = null; } ttsAudio = null; playNext(); };
+            a.onerror = function(){ failover(new Error(label + " audio playback failed")); };
+            var p = null;
+            try { p = a.play(); } catch(e){ failover(new Error(label + " audio playback blocked")); return; }
+            if (p && p.catch) p.catch(function(){ failover(new Error(label + " audio playback blocked")); });
+          }).catch(failover);
+        }
+        playNext();
+      }
+      function voiceNotSet(){
+        DIAG.tts = "VOICE MODEL NOT SET \u2014 OPEN AI SETTINGS"; renderDiag();
+        flashStatus("STATUS: VOICE MODEL NOT SET \u2014 OPEN AI SETTINGS", 6000);
+        voiceBusy = false;
+        if (voiceWanted){ setState("listening", true); statusEl.textContent = "STATUS: LISTENING"; restartRecog(); }
+        else if (S.state === "thinking" || S.state === "speaking"){ setState("idle", true); statusEl.textContent = "STATUS: IDLE"; }
+      }
+      function activeTts(){
+        if (fishEnabled()) return { fetcher: fishFetchChunk, label: "Fish Audio", desc: "Fish Audio \u00B7 " + fishModel() + (AICFG.fishRef ? " \u00B7 voice " + AICFG.fishRef : " \u00B7 default voice") };
+        if (elEnabled()) return { fetcher: elFetchChunk, label: "ElevenLabs", desc: "ElevenLabs \u00B7 " + (AICFG.elModel || "eleven_multilingual_v2") + " \u00B7 voice " + AICFG.elVoice };
+        if (gemEnabled()) return { fetcher: gemFetchChunk, label: "Gemini", desc: "Gemini \u00B7 " + (AICFG.gemModel || "gemini-2.5-flash-preview-tts") + " \u00B7 voice " + (AICFG.gemVoice || "Kore") };
+        if (customEnabled()) return { fetcher: customFetchChunk, label: "Custom TTS", desc: "Custom TTS \u00B7 " + AICFG.ttsModel + (AICFG.ttsVoice ? " \u00B7 voice " + AICFG.ttsVoice : "") };
+        return null;
+      }
+      function speakReply(text){
+        stopTtsAudio();
+        var act = activeTts();
+        if (act) speakReplyVia(text, act.fetcher, act.label, act.desc);
+        else voiceNotSet();
       }
       function submitQuestion(q){
         q = (q || "").trim();
@@ -1984,7 +2134,6 @@
         });
       }
       function askAI(){
-        if (window.__apexPrimeTTS) window.__apexPrimeTTS();
         var q = $("chatInput").value.trim();
         if (!q) return;
         $("chatInput").value = "";
@@ -2292,7 +2441,6 @@
       }
       function startGateVoice(){
         if (gateVoiceOn && !voiceWanted && !S.entered){ gateVoiceOn = false; setGateMicUI(); } // session was stopped inside (EXIT / MIC) — resync
-        if (window.__apexPrimeTTS) window.__apexPrimeTTS();
         try { ensureAudio(); } catch(e){}
         if (gateVoiceOn){ stopGateVoice(); return; }
         if (S.entered) return;
