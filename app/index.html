@@ -201,7 +201,8 @@
   </head>
   <body>
     <!-- ================= APEX-UI — the first interface =================
-         Tap the golden core in the centre to enter the humanoid. -->
+         Tap the golden core in the centre to talk with Apex right here.
+         The small circle at the bottom (or "open your humanoid") enters the humanoid. -->
     <div id="uiWorld">
       <div class="uw-bg" aria-hidden="true"></div>
       <canvas id="uwShader" aria-hidden="true"></canvas>
@@ -253,7 +254,7 @@
         </div>
       </div>
 
-      <div id="coreTap" role="button" tabindex="0" aria-label="Apex core — tap to enter the humanoid"></div>
+      <div id="coreTap" role="button" tabindex="0" aria-label="Apex core — tap to talk with Apex"></div>
 
       <button class="gateMicBtn" type="button" aria-label="Voice entry — say: open your humanoid" style="position:absolute;left:50%;transform:translateX(-50%);bottom:172px;z-index:19;padding:10px 18px;min-height:44px;background:rgba(3,2,0,.55);color:#ffd080;border:1px solid rgba(245,166,35,.55);border-radius:999px;font-family:'Share Tech Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;cursor:pointer;white-space:nowrap;max-width:92vw;">🎙 قول: افتح الهيومانويد · say: open your humanoid</button>
 
@@ -1047,6 +1048,7 @@
         if (S.state === st) return;
         trans.from = trans.to; trans.to = st; trans.start = performance.now();
         S.state = st;
+        if (hudTalk && !S.entered && window.__apexHudState) window.__apexHudState(st);
         document.querySelectorAll(".stateBtn").forEach(function(b){
           b.classList.toggle("active", b.getAttribute("data-state") === st);
         });
@@ -2264,7 +2266,7 @@
           DIAG.heard = text; DIAG.engine = "local Whisper model"; renderDiag();
           flashStatus("STATUS: YOU SAID — " + text, 7000);
           if (handleVoiceCommand(text)){ /* voice command: executed locally, never sent to the chat — the ack's endSpeak owns voiceBusy */ }
-          else if (!S.entered){ voiceBusy = false; /* entry screen: only commands act — plain chatter is ignored */ }
+          else if (!S.entered && !hudTalk){ voiceBusy = false; /* entry screen: only commands act — plain chatter is ignored (a running HUD conversation is the exception) */ }
           else submitQuestion(text); // from here the v1.2 flow owns voiceBusy (reset in endSpeak / error paths)
         }).catch(function(err){
           if (gen !== voiceGen){ voiceBusy = false; return; }
@@ -2300,7 +2302,7 @@
             voiceBusy = true;
             try { recog.stop(); } catch(e){}
             if (handleVoiceCommand(finalText)){ /* voice command: executed locally, never sent to the chat — the ack's endSpeak restarts listening */ }
-            else if (!S.entered){ voiceBusy = false; /* entry screen: only commands act — plain chatter is ignored */ }
+            else if (!S.entered && !hudTalk){ voiceBusy = false; /* entry screen: only commands act — plain chatter is ignored (a running HUD conversation is the exception) */ }
             else { statusEl.textContent = "STATUS: THINKING"; submitQuestion(finalText); }
           }
         };
@@ -2473,6 +2475,37 @@
         }).catch(function(){ gateVoiceOn = false; setGateMicUI(); });
       }
       document.querySelectorAll(".gateMicBtn").forEach(function(b){ b.addEventListener("click", startGateVoice); });
+
+      /* ---------- HUD conversation: tap the APEX-UI core and Apex talks
+         with you right there in the first interface, like MIRA's HUD —
+         the centre no longer enters the humanoid (the bottom circle
+         is the only tap entry, and "open your humanoid" still walks
+         in). The session is the app's own voice loop — same STT,
+         same chat, same voice-model TTS; hudTalk is what lets plain
+         chatter reach submitQuestion() while S.entered is false, and
+         setState mirrors the conversation state to the HUD status
+         bar via __apexHudState. Tapping the core again stops it. */
+      var hudTalk = false;
+      function hudTalkStart(){
+        if (hudTalk || S.entered) return;
+        hudTalk = true;
+        try { ensureAudio(); } catch(e){}
+        setState("listening", true);
+        if (window.__apexHudState) window.__apexHudState("listening");
+        if (gateVoiceOn && !voiceWanted) stopGateVoice(); // stale pill session — reset it
+        if (!gateVoiceOn) startGateVoice(); // mic + STT, exactly like the entry pill
+      }
+      function hudTalkStop(){
+        if (!hudTalk) return;
+        hudTalk = false;
+        if (gateVoiceOn) stopGateVoice(); else stopVoice();
+        stopTtsAudio();
+        if (S.state === "listening" || S.state === "speaking" || S.state === "thinking") setState("idle", true);
+        if (window.__apexHudState) window.__apexHudState("standby");
+      }
+      window.__apexHudTalkStart = hudTalkStart;
+      window.__apexHudTalkStop = hudTalkStop;
+      window.__apexHudTalkOn = function(){ return hudTalk; };
       loadAiConfig();
       $("chatSend").addEventListener("click", askAI);
       $("chatInput").addEventListener("keydown", function(e){ if (e.key === "Enter") askAI(); });
@@ -2527,6 +2560,7 @@
         if (S.entered) return;
         ensureAudio();
         S.entered = true;
+        hudTalk = false; // a HUD conversation continues inside as the normal voice loop
         gate.style.display = "none";
         var uwEl = $("uiWorld"); if (uwEl) uwEl.style.display = "none";
         stage.style.display = "block";
@@ -2998,7 +3032,8 @@
       }
       document.addEventListener("keydown", function(e){ if (e.key === "Escape" && !card.hidden) closeCard(); });
 
-      /* ---------- the core tap → straight into the humanoid ---------- */
+      /* ---------- entering the humanoid: the bottom circle below, or
+         the spoken "open your humanoid" command via __apexUiEnter ---------- */
       function enterHumanoid(){
         if (leaving) return; leaving = true;
         uiWorld.classList.add("uw-leaving");
@@ -3010,9 +3045,28 @@
         }, 480);
       }
       window.__apexUiEnter = enterHumanoid;
+      /* ---------- the core tap → a voice conversation right here ----------
+         The centre no longer enters the humanoid: it starts (or stops)
+         a voice conversation in this HUD, like MIRA's — Apex listens,
+         answers through the shared chat and speaks with the configured
+         voice model. The humanoid side mirrors the conversation state
+         into the status bar via __apexHudState. */
+      var HUD_STATE_LABEL = { idle: "STANDBY", listening: "LISTENING", thinking: "THINKING", speaking: "SPEAKING" };
+      window.__apexHudState = function(st){
+        if (sbState) sbState.textContent = HUD_STATE_LABEL[st] || "STANDBY";
+      };
+      function toggleHudTalk(){
+        if (leaving) return;
+        if (window.__apexHudTalkOn && window.__apexHudTalkOn()){
+          if (window.__apexHudTalkStop) window.__apexHudTalkStop();
+          if (sbState) sbState.textContent = "STANDBY";
+        } else if (window.__apexHudTalkStart){
+          window.__apexHudTalkStart();
+        }
+      }
       var coreTap = document.getElementById("coreTap");
-      coreTap.addEventListener("click", enterHumanoid);
-      coreTap.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); enterHumanoid(); } });
+      coreTap.addEventListener("click", toggleHudTalk);
+      coreTap.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); toggleHudTalk(); } });
       coreTap.addEventListener("mousedown", function(e){ e.preventDefault(); });
 
       /* the small circle at the bottom of the status bar: tapping it flips
