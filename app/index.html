@@ -71,6 +71,8 @@
       #aiMsg { color: #f5a623; margin-top: 10px; font-size: 11px; min-height: 16px; }
       #aiState { color: var(--dim); margin-top: 6px; font-size: 10px; }
       #aiState.on { color: #57e6a9; }
+      #ttsTest { margin-top: 10px; width: 100%; padding: 10px; min-height: 44px; background: rgba(87,230,169,.12); color: #57e6a9; border: 1px solid rgba(87,230,169,.4); border-radius: 8px; font-size: 11px; letter-spacing: .14em; cursor: pointer; }
+      #diagText { color: var(--dim); margin-top: 8px; font-size: 10px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
 
       /* ---------- AI chat ---------- */
       #chatBar { position: fixed; bottom: 54px; left: 50%; transform: translateX(-50%); z-index: 190; display: none; gap: 6px; width: min(620px, calc(100vw - 20px)); }
@@ -193,6 +195,8 @@
         .ov-time { font-size: 28px; }
         #orbStatus { bottom: 10px; }
       }
+      .gateMicBtn.gateMicOn { background: rgba(245,166,35,.30) !important; color: #fff2d8 !important; border-color: #ffd080 !important; }
+      #gate .gateMicBtn.gateMicOn { background: rgba(34,211,238,.20) !important; color: #ecfeff !important; border-color: rgba(34,211,238,.8) !important; }
     </style>
   </head>
   <body>
@@ -250,6 +254,8 @@
       </div>
 
       <div id="coreTap" role="button" tabindex="0" aria-label="Apex core — tap to enter the humanoid"></div>
+
+      <button class="gateMicBtn" type="button" aria-label="Voice entry — say: open your humanoid" style="position:absolute;left:50%;transform:translateX(-50%);bottom:172px;z-index:19;padding:10px 18px;min-height:44px;background:rgba(3,2,0,.55);color:#ffd080;border:1px solid rgba(245,166,35,.55);border-radius:999px;font-family:'Share Tech Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;cursor:pointer;white-space:nowrap;max-width:92vw;">🎙 قول: افتح الهيومانويد · say: open your humanoid</button>
 
       <div id="orbStatus">
         <svg width="420" height="130" viewBox="0 0 420 130" fill="none" style="max-width:100vw">
@@ -322,6 +328,7 @@
         <div class="title">APEX HUMANOID</div>
         <div class="sub">a figure of light that assembles itself</div>
         <button id="enterBtn" type="button">ENTER</button>
+        <button class="gateMicBtn" type="button" aria-label="Voice entry — say: open your humanoid" style="display:block;margin:14px auto 0;padding:10px 18px;min-height:44px;background:transparent;color:#a5f3fc;border:1px solid rgba(34,211,238,.4);border-radius:10px;font-size:12px;letter-spacing:.08em;cursor:pointer;">🎙 قول: افتح الهيومانويد · say: open your humanoid</button>
         <div class="note">the click opens the audio - the birth has a sound</div>
       </div>
     </div>
@@ -353,12 +360,13 @@
 
       <aside id="aiPanel" aria-label="AI settings">
         <div class="apTitle">AI SETTINGS</div>
-        <div class="apSub">Connect Apex to your own AI model. Applies for this session.</div>
+        <div class="apSub">Connect Apex to your own AI model. Settings are saved on this device.</div>
         <label for="aiProvider">PROVIDER</label>
         <select id="aiProvider">
           <option value="openai">OpenAI</option>
           <option value="openrouter">OpenRouter</option>
           <option value="groq">Groq</option>
+          <option value="nvidia">NVIDIA NIM</option>
           <option value="custom">Custom (OpenAI-compatible)</option>
         </select>
         <label for="aiModel">AI MODEL</label>
@@ -368,6 +376,9 @@
           <option value="gpt-4o-mini"></option>
           <option value="gpt-4.1-mini"></option>
           <option value="llama-3.3-70b-versatile"></option>
+          <option value="nvidia/nemotron-3.5-bolt-e4b"></option>
+          <option value="nvidia/nemotron-3-ultra-550b-a55b"></option>
+          <option value="nvidia/nemotron-3.5-super-vl-120b-a12b"></option>
           <option value="openai/gpt-4o-mini"></option>
         </datalist>
         <label for="aiKey">API KEY</label>
@@ -377,11 +388,13 @@
         <label for="aiTemp">TEMPERATURE</label>
         <div id="aiTempRow"><input id="aiTemp" type="range" min="0" max="2" step="0.1" value="0.7" /><span id="aiTempVal">0.7</span></div>
         <label for="aiSystem">SYSTEM PROMPT</label>
-        <textarea id="aiSystem">You are Apex, a humanoid figure of light. Answer briefly and vividly.</textarea>
+        <textarea id="aiSystem">You are Apex, a friendly voice assistant. Always reply in the same language as the user. If the user speaks Arabic, you MUST reply in Egyptian colloquial Arabic (Masri dialect) only — never in formal Arabic (fusha). Talk like a normal person from Cairo. Examples of your style: User: عامل ايه؟ -> Apex: الحمد لله تمام، انت عامل ايه؟ User: ايه الاخبار؟ -> Apex: كله تمام، الدنيا ماشية. تحب نتكلم في ايه؟ User: انت مين؟ -> Apex: أنا أبيكس، مساعدك الصوتي. اسألني أي حاجة وأنا أرد عليك على طول. If the user speaks English, reply in natural English. Keep every reply short: one or two sentences, clear and direct, good for speaking aloud. Never use riddles, slogans or poetic fragments.</textarea>
         <div id="aiMsg" role="alert"></div>
         <button id="aiDone" type="button">DONE</button>
         <button id="aiClose" type="button">CLOSE</button>
         <div id="aiState">AI: not configured</div>
+        <button id="ttsTest" type="button">🔊 TEST VOICE</button>
+        <div id="diagText">voice check: —</div>
       </aside>
 
       <div id="aiReply" role="status"></div>
@@ -599,6 +612,7 @@
       var $ = function(id){ return document.getElementById(id); };
       var gate = $("gate"), stage = $("stage"), frame = $("frame"), canvas = $("humCanvas"),
           ctx = canvas.getContext("2d", { desynchronized: true }), statusEl = $("status"), ringsEl = $("rings"),
+          statusHoldUntil = 0, statusOverrideText = "",
           bgImg = $("bgImg"), halo = $("halo");
 
       function fitCanvas(){
@@ -1330,8 +1344,13 @@
            uBreathe = 1 + 0.004 sin(0.9t), anchored where it stands. */
         /* dt was measured once at the top of this frame (see above) */
         var J = S.state === "speaking" ? 0.55 : (S.state === "listening" ? 1.1 : 1);
-        var tYaw = Math.max(-1, Math.min(1, S.attention.x)) * 0.44 * J;
-        var tPitch = Math.max(-1, Math.min(1, S.attention.y)) * 0.20 * J;
+        /* voice-command head hold: while a spoken turn command is active it
+           overrides the pointer/finger attention target — through the same
+           gaze path, so only the head turns and the body stays fixed */
+        var attnX = S.attention.x, attnY = S.attention.y;
+        if (now < voiceCmdHold.until){ attnX = voiceCmdHold.x; attnY = voiceCmdHold.y; }
+        var tYaw = Math.max(-1, Math.min(1, attnX)) * 0.44 * J;
+        var tPitch = Math.max(-1, Math.min(1, attnY)) * 0.20 * J;
         var gk = 1 - Math.exp(-dt * 4.2);
         S.yaw += (tYaw - S.yaw) * gk;
         S.pitch += (tPitch - S.pitch) * gk;
@@ -1450,9 +1469,11 @@
           } else {
             drawFigure(toImg, 1, scale, t, S.energy);
           }
-          statusEl.textContent = (S.state === "speaking" && S.energy > 0.58)
-            ? "STATUS: SPEAKING  INTENSITY: HIGH"
-            : "STATUS: " + S.state.toUpperCase();
+          if (performance.now() >= statusHoldUntil){
+            statusEl.textContent = (S.state === "speaking" && S.energy > 0.58)
+              ? "STATUS: SPEAKING  INTENSITY: HIGH"
+              : "STATUS: " + S.state.toUpperCase();
+          }
         }
 
         /* the ignition surge ring runs on its own clock, assembly or not */
@@ -1534,11 +1555,17 @@
         if (micCtx) micCtx.close();
         micStream = null; micCtx = null; S.micOn = false; S.energy = 0;
         $("micBtn").textContent = "🎙 MIC OFF"; $("micBtn").classList.remove("micOn");
+        stopVoice();
       }
+      function flashStatus(text, ms){ statusOverrideText = text; statusHoldUntil = performance.now() + (ms || 4000); statusEl.textContent = text; }
       $("micBtn").addEventListener("click", function(){
-        if (S.micOn){ stopMic(); if (S.state === "speaking") setState("idle"); return; }
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+        if (window.__apexPrimeTTS) window.__apexPrimeTTS();
+        if (S.micOn){ stopMic(); if (S.state === "speaking" || S.state === "listening") setState("idle"); return; }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ flashStatus("STATUS: NO MICROPHONE ACCESS IN THIS BROWSER", 9000); return; }
+        var micSettled = false;
+        var micWatchdog = setTimeout(function(){ if (!micSettled && !S.micOn) flashStatus("STATUS: MIC UNAVAILABLE IN THIS BROWSER \u2014 OPEN THIS PAGE IN SAFARI", 9000); }, 5000);
         navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+          micSettled = true; clearTimeout(micWatchdog);
           micStream = stream;
           var Ctor = window.AudioContext || window.webkitAudioContext;
           micCtx = new Ctor();
@@ -1551,13 +1578,16 @@
             var sum = 0;
             for (var i = 0; i < data.length; i++){ var v = (data[i] - 128) / 128; sum += v * v; }
             var rms = Math.min(1, Math.sqrt(sum / data.length) * 6);
-            S.energy += (rms - S.energy) * 0.35;
+            micRMS = rms; // live level for the voice utterance detector
+            if (!ttsDrive) S.energy += (rms - S.energy) * 0.35;
             micRAF = requestAnimationFrame(tick);
           })();
           S.micOn = true;
           $("micBtn").textContent = "🎙 MIC ON"; $("micBtn").classList.add("micOn");
-          setState("speaking");
-        }).catch(function(){ /* permission denied — stay silent, like the original */ });
+          setState("listening");
+          statusEl.textContent = "STATUS: LISTENING";
+          startVoice();
+        }).catch(function(){ micSettled = true; clearTimeout(micWatchdog); flashStatus("STATUS: MIC BLOCKED — ALLOW MICROPHONE ACCESS", 9000); });
       });
 
       /* ============================== camera / hand gesture ============================== */
@@ -1689,19 +1719,64 @@
         }
       }
 
-      /* ============================== AI settings + chat ==============================
+      /* ============================== AI settings + chat + voice ==============================
          The side panel collects the user's own AI model + API key. DONE
-         stores them in memory for this session only (nothing is persisted),
-         activates the model, shows the ask bar and hides the panel. Asking
-         calls the provider's OpenAI-compatible chat endpoint directly from
-         the browser with the user's key; Apex thinks, then speaks the reply. */
+         saves them to localStorage on this device, activates the model,
+         shows the ask bar and hides the panel; on startup the saved
+         config is loaded back, pre-filled and activated automatically,
+         so the user never re-types it. Asking (typed, or spoken through
+         the mic) calls the provider's OpenAI-compatible chat endpoint
+         directly with the user's key; Apex thinks, then SPEAKS the reply
+         back with text-to-speech while the face speaks, then listens
+         again if the mic is on. */
       var AICFG = null, aiBusy = false;
+      var AI_LS_KEY = "apex.aiConfig.v1";
+      function saveAiConfig(){
+        try { localStorage.setItem(AI_LS_KEY, JSON.stringify(AICFG)); } catch(e){}
+      }
+      function applyAiConfig(cfg, silent){
+        AICFG = cfg;
+        $("aiProvider").value = cfg.provider || "openai";
+        $("aiModel").value = cfg.model || "";
+        $("aiKey").value = cfg.key || "";
+        $("aiBase").value = cfg.base || "";
+        $("aiTemp").value = (cfg.temp == null ? 0.7 : cfg.temp);
+        $("aiTempVal").textContent = Number($("aiTemp").value).toFixed(1);
+        $("aiSystem").value = cfg.system || "";
+        DIAG.prompt = (cfg.system || "—").slice(0, 80); if (typeof renderDiag === "function") renderDiag();
+        aiMsg.textContent = "";
+        aiState.textContent = "AI: " + cfg.model + " — active";
+        aiState.classList.add("on");
+        var btn = $("aiBtn"); btn.textContent = "AI • " + cfg.model; btn.classList.add("aiOn");
+        if (!silent) $("chatBar").classList.add("show");
+        if (S.entered) $("chatBar").classList.add("show");
+      }
+      function loadAiConfig(){
+        var cfg = null;
+        try { cfg = JSON.parse(localStorage.getItem(AI_LS_KEY) || "null"); } catch(e){}
+        if (cfg && (cfg.system === "You are Apex, a humanoid figure of light. Answer briefly and vividly." || cfg.system === "You are Apex, a friendly and helpful voice assistant. Reply in the same language as the user (Arabic or English). Answer questions directly and naturally, in short clear sentences that sound good spoken aloud. Never reply with riddles, slogans or poetic fragments." || cfg.system === "You are Apex, a friendly and helpful voice assistant. Always reply in the same language as the user. If the user speaks Arabic, reply in natural Egyptian colloquial Arabic — the way people actually talk in Cairo — not formal Arabic. If the user speaks English, reply in English. Answer directly and naturally in short, clear sentences that sound good spoken aloud. Never reply with riddles, slogans or poetic fragments.")){ cfg.system = "You are Apex, a friendly voice assistant. Always reply in the same language as the user. If the user speaks Arabic, you MUST reply in Egyptian colloquial Arabic (Masri dialect) only — never in formal Arabic (fusha). Talk like a normal person from Cairo. Examples of your style: User: عامل ايه؟ -> Apex: الحمد لله تمام، انت عامل ايه؟ User: ايه الاخبار؟ -> Apex: كله تمام، الدنيا ماشية. تحب نتكلم في ايه؟ User: انت مين؟ -> Apex: أنا أبيكس، مساعدك الصوتي. اسألني أي حاجة وأنا أرد عليك على طول. If the user speaks English, reply in natural English. Keep every reply short: one or two sentences, clear and direct, good for speaking aloud. Never use riddles, slogans or poetic fragments."; try { localStorage.setItem(AI_LS_KEY, JSON.stringify(cfg)); } catch(e){} }
+        if (cfg && cfg.model && cfg.key && cfg.base) applyAiConfig(cfg, true);
+      }
       var aiPanel = $("aiPanel"), aiMsg = $("aiMsg"), aiState = $("aiState");
-      var PROVIDER_BASE = { openai: "https://api.openai.com/v1", openrouter: "https://openrouter.ai/api/v1", groq: "https://api.groq.com/openai/v1", custom: "" };
-      function openAiPanel(){ aiPanel.style.display = "block"; requestAnimationFrame(function(){ aiPanel.classList.add("open"); }); }
+      var PROVIDER_BASE = { openai: "https://api.openai.com/v1", openrouter: "https://openrouter.ai/api/v1", groq: "https://api.groq.com/openai/v1", nvidia: "https://integrate.api.nvidia.com/v1", custom: "" };
+      function openAiPanel(){ updateVoicesDiag(); aiPanel.style.display = "block"; requestAnimationFrame(function(){ aiPanel.classList.add("open"); }); }
       function closeAiPanel(){ aiPanel.classList.remove("open"); setTimeout(function(){ if (!aiPanel.classList.contains("open")) aiPanel.style.display = "none"; }, 300); }
       $("aiBtn").addEventListener("click", function(){ aiPanel.classList.contains("open") ? closeAiPanel() : openAiPanel(); });
       $("aiClose").addEventListener("click", closeAiPanel);
+      $("ttsTest").addEventListener("click", function(){
+        updateVoicesDiag();
+        var synth = window.speechSynthesis;
+        if (!synth || typeof SpeechSynthesisUtterance === "undefined"){ DIAG.tts = "NOT AVAILABLE in this browser"; renderDiag(); return; }
+        try { if (synth.speaking || synth.pending) synth.cancel(); } catch(e){}
+        var u = new SpeechSynthesisUtterance("أهلاً بيك، أنا أبيكس. لو سمعت الجملة دي يبقى الصوت شغال تمام.");
+        u.lang = "ar-EG"; u.rate = 0.95;
+        try { var vs = synth.getVoices() || []; for (var i = 0; i < vs.length; i++){ if (vs[i].lang && vs[i].lang.toLowerCase().indexOf("ar") === 0){ u.voice = vs[i]; break; } } } catch(e){}
+        u.onstart = function(){ DIAG.tts = "started \u2014 you should hear it now"; renderDiag(); };
+        u.onend = function(){ DIAG.tts = "finished normally"; renderDiag(); };
+        u.onerror = function(ev){ DIAG.tts = "ERROR: " + (ev && ev.error ? ev.error : "unknown"); renderDiag(); };
+        DIAG.tts = "requested\u2026"; renderDiag();
+        setTimeout(function(){ try { synth.resume(); } catch(e){} synth.speak(u); }, 60);
+      });
       $("aiProvider").addEventListener("change", function(){
         var b = PROVIDER_BASE[this.value];
         if (b) $("aiBase").value = b;
@@ -1714,13 +1789,9 @@
         if (!model){ aiMsg.textContent = "enter the AI model name"; $("aiModel").focus(); return; }
         if (!key){ aiMsg.textContent = "enter your API key"; $("aiKey").focus(); return; }
         if (!base){ aiMsg.textContent = "enter the API base URL"; $("aiBase").focus(); return; }
-        AICFG = { provider: $("aiProvider").value, model: model, key: key, base: base,
-                  temp: parseFloat($("aiTemp").value), system: $("aiSystem").value.trim() };
-        aiMsg.textContent = "";
-        aiState.textContent = "AI: " + model + " — active";
-        aiState.classList.add("on");
-        var btn = $("aiBtn"); btn.textContent = "AI • " + model; btn.classList.add("aiOn");
-        $("chatBar").classList.add("show");
+        applyAiConfig({ provider: $("aiProvider").value, model: model, key: key, base: base,
+                  temp: parseFloat($("aiTemp").value), system: $("aiSystem").value.trim() });
+        saveAiConfig();
         closeAiPanel();
         if (S.entered){ statusEl.textContent = "STATUS: " + S.state.toUpperCase() + " · AI READY"; if (AC && S.soundOn) stateBlip("listening"); }
       });
@@ -1731,38 +1802,530 @@
         r.appendChild(who); r.appendChild(document.createTextNode(text));
         r.classList.add("show");
       }
+      function chatRequest(q){
+        var ac = (typeof AbortController !== "undefined") ? new AbortController() : null;
+        var to = ac ? setTimeout(function(){ try { ac.abort(); } catch(e){} }, 60000) : 0;
+        // normalize the saved base URL: no trailing slashes, and a pasted
+        // ".../chat/completions" suffix must not be duplicated below
+        var base = String(AICFG.base || "").replace(/\/+$/, "").replace(/\/chat\/completions$/, "");
+        var temp = parseFloat(AICFG.temp);
+        if (isNaN(temp)) temp = 0.7;
+        return fetch(base + "/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + AICFG.key },
+          body: JSON.stringify({ model: AICFG.model, temperature: temp,
+            messages: [ { role: "system", content: AICFG.system || "You are Apex." }, { role: "user", content: q } ] }),
+          signal: ac ? ac.signal : undefined
+        }).then(function(resp){
+          if (to) clearTimeout(to);
+          // read the body as TEXT first: providers report errors in many
+          // shapes (OpenAI error.message, NVIDIA detail/title, plain text) —
+          // parsing JSON-or-nothing here used to swallow the real reason
+          return resp.text().then(function(raw){
+            var data = null;
+            if (raw){ try { data = JSON.parse(raw); } catch(e){} }
+            return { ok: resp.ok, status: resp.status, data: data, raw: raw || "" };
+          }, function(){ return { ok: resp.ok, status: resp.status, data: null, raw: "" }; });
+        }, function(err){
+          if (to) clearTimeout(to);
+          if (err && err.name === "AbortError") throw new Error("request timed out after 60s — the model may be cold-starting, try again");
+          throw new Error("could not reach the API — check the base URL, key and connection");
+        }).then(function(out){
+          if (!out.ok){
+            var d = out.data, em = null;
+            if (d){
+              if (d.error) em = (typeof d.error === "string") ? d.error : d.error.message;
+              if (!em && d.detail != null) em = (typeof d.detail === "string") ? d.detail : (d.detail.message || d.detail.msg || JSON.stringify(d.detail));
+              if (!em && d.title) em = String(d.title);
+              if (!em && d.message) em = d.message;
+            }
+            if (!em && out.raw) em = out.raw.trim();
+            if (em && em.length > 300) em = em.slice(0, 300);
+            throw new Error("HTTP " + (out.status || "?") + " — " + (em || "request failed"));
+          }
+          var text = out.data && out.data.choices && out.data.choices[0] && out.data.choices[0].message && out.data.choices[0].message.content;
+          if (!text) throw new Error("empty reply from the model");
+          return String(text).trim();
+        });
+      }
+      /* ---- spoken reply: TTS drives the speaking face, then we listen again ---- */
+      // iOS: speechSynthesis stays silent until a speak() happens inside a user gesture — prime it on the first taps
+      (function(){
+        var primed = false;
+        function prime(){
+          if (primed) return; primed = true;
+          try {
+            var synth = window.speechSynthesis;
+            if (synth && typeof SpeechSynthesisUtterance !== "undefined"){
+              var u0 = new SpeechSynthesisUtterance("جاهز");
+              u0.volume = 0;
+              synth.speak(u0);
+              if (synth.getVoices && synth.getVoices().length === 0 && synth.addEventListener) synth.addEventListener("voiceschanged", function(){});
+            }
+          } catch(e){}
+          document.removeEventListener("pointerdown", prime, true);
+          document.removeEventListener("touchend", prime, true);
+        }
+        window.__apexPrimeTTS = prime;
+        document.addEventListener("pointerdown", prime, true);
+        document.addEventListener("touchend", prime, true);
+      })();
+
+      var ttsDrive = false, ttsTimer = 0, ttsResumeTimer = 0;
+      /* ---- voice diagnostics: readable in AI SETTINGS, so voice problems are never silent ---- */
+      var DIAG = { browser: "—", engine: "—", heard: "—", voices: "—", arVoice: "—", tts: "—", prompt: "—", voiceUsed: "—" };
+      (function(){ var ua = navigator.userAgent || ""; DIAG.browser = /Electron/i.test(ua) ? "desktop app" : ((/Safari/i.test(ua) && !/Chrome|CriOS|FxiOS/i.test(ua)) ? "Safari" : ((/AppleWebKit/i.test(ua) && !/Safari/i.test(ua)) ? "in-app webview" : "other browser")); })();
+      function renderDiag(){ var el = $("diagText"); if (!el) return; el.textContent = "VOICE CHECK\nBrowser: " + DIAG.browser + "\nHearing engine: " + DIAG.engine + "\nLast heard: " + DIAG.heard + "\nVoices on device: " + DIAG.voices + " \u00B7 Arabic voice: " + DIAG.arVoice + "\nSpeech: " + DIAG.tts + "\nVoice used: " + DIAG.voiceUsed + "\nPrompt: " + DIAG.prompt; }
+      function updateVoicesDiag(){ try { var vs = window.speechSynthesis ? speechSynthesis.getVoices() : []; DIAG.voices = String(vs.length); DIAG.arVoice = "no"; for (var i = 0; i < vs.length; i++){ if (vs[i].lang && vs[i].lang.toLowerCase().indexOf("ar") === 0){ DIAG.arVoice = "yes (" + vs[i].lang + ")"; break; } } } catch(e){ DIAG.voices = "error"; } renderDiag(); }
+      if (window.speechSynthesis && speechSynthesis.addEventListener) speechSynthesis.addEventListener("voiceschanged", updateVoicesDiag);
+      renderDiag();
+      function endSpeak(){
+        ttsDrive = false;
+        if (ttsTimer){ clearInterval(ttsTimer); ttsTimer = 0; }
+        if (ttsResumeTimer){ clearInterval(ttsResumeTimer); ttsResumeTimer = 0; }
+        voiceBusy = false;
+        if (voiceWanted){ setState("listening", true); statusEl.textContent = "STATUS: LISTENING"; restartRecog(); }
+        else if (S.state === "speaking") setState("idle", true);
+      }
+      function speakReply(text){
+        setState("speaking", true); statusEl.textContent = "STATUS: SPEAKING";
+        var synth = window.speechSynthesis;
+        if (!synth || typeof SpeechSynthesisUtterance === "undefined"){
+          DIAG.tts = "NOT AVAILABLE in this browser"; renderDiag();
+          // no TTS in this browser: keep the speaking face for a readable beat, then move on
+          ttsDrive = true;
+          var t0 = performance.now();
+          ttsTimer = setInterval(function(){ S.energy = 0.45 + 0.35 * Math.abs(Math.sin(performance.now() / 130)); }, 90);
+          setTimeout(function(){ if (ttsTimer){ clearInterval(ttsTimer); ttsTimer = 0; } endSpeak(); }, Math.max(2200, Math.min(12000, text.length * 55)));
+          return;
+        }
+        ttsDrive = true;
+        ttsTimer = setInterval(function(){ S.energy = 0.45 + 0.35 * Math.abs(Math.sin(performance.now() / 130)); }, 90);
+        var done = false;
+        function finish(){ if (done) return; done = true; if (ttsResumeTimer){ clearInterval(ttsResumeTimer); ttsResumeTimer = 0; } endSpeak(); }
+        // iOS Safari drops an utterance queued in the same tick as cancel():
+        // only cancel when something is actually playing, then speak a beat later.
+        var wasActive = false;
+        try { wasActive = !!(synth.speaking || synth.pending); if (wasActive) synth.cancel(); } catch(e){}
+        // pick a voice that matches the reply's language (Arabic replies need an Arabic voice when one exists)
+        var isAr = /[\u0600-\u06FF]/.test(text);
+        var wantLang = isAr ? "ar-EG" : (navigator.language || "en-US");
+        var voice = null;
+        try {
+          var vs = synth.getVoices() || [];
+          var prefNames = ["maged", "amira", "laila", "tariq", "salma", "majed"];
+          var firstAr = null, namedAr = null;
+          for (var vi = 0; vi < vs.length; vi++){
+            var vl = (vs[vi].lang || "").toLowerCase(), vn = (vs[vi].name || "").toLowerCase();
+            if (isAr && vl.indexOf("ar-eg") === 0){ voice = vs[vi]; break; }
+            if (isAr && vl.indexOf("ar") === 0){ if (!firstAr) firstAr = vs[vi]; for (var ni = 0; ni < prefNames.length; ni++){ if (vn.indexOf(prefNames[ni]) >= 0) namedAr = vs[vi]; } }
+            if (!isAr && vl.indexOf(wantLang.slice(0, 2).toLowerCase()) === 0){ voice = vs[vi]; break; }
+          }
+          if (!voice && isAr) voice = namedAr || firstAr;
+        } catch(e){}
+        // split into sentence-sized chunks: iOS cuts or silences long single utterances
+        var chunks = [];
+        var parts = String(text).replace(/\s+/g, " ").match(/[^.!?؟…\n]+[.!?؟…]*\s*/g) || [String(text)];
+        var cur = "";
+        for (var pi = 0; pi < parts.length; pi++){
+          var cap = isAr ? 140 : 320;
+          if ((cur + parts[pi]).length > cap && cur){ chunks.push(cur); cur = ""; }
+          cur += parts[pi];
+        }
+        if (cur.trim()) chunks.push(cur);
+        if (!chunks.length) chunks = [String(text)];
+        var ci = 0;
+        function speakNext(){
+          if (done) return;
+          if (ci >= chunks.length){ finish(); return; }
+          var u = new SpeechSynthesisUtterance(chunks[ci]);
+          u.lang = wantLang;
+          if (voice) u.voice = voice;
+          DIAG.voiceUsed = voice ? (voice.name + " (" + voice.lang + ")") : "browser default for " + wantLang; renderDiag();
+          u.rate = 1.0;
+          u.onstart = function(){ if (ci === 0){ DIAG.tts = "started"; renderDiag(); } };
+          u.onend = function(){ ci++; speakNext(); };
+          u.onerror = function(ev){ if (ci === 0){ DIAG.tts = "ERROR: " + (ev && ev.error ? ev.error : "unknown"); renderDiag(); } ci++; speakNext(); };
+          try { synth.resume(); } catch(e){}
+          synth.speak(u);
+        }
+        if (ttsResumeTimer){ clearInterval(ttsResumeTimer); ttsResumeTimer = 0; }
+        // safety net: never stay stuck in speaking if utterances never report back
+        setTimeout(function(){ if (ttsDrive && S.state === "speaking") finish(); }, Math.max(10000, Math.min(90000, text.length * 220)));
+        setTimeout(speakNext, wasActive ? 90 : 0);
+      }
+      function submitQuestion(q){
+        q = (q || "").trim();
+        if (!q) return;
+        if (!AICFG){
+          showReply("⚠ Open AI SETTINGS and add your model + API key first — DONE saves them on this device.");
+          flashStatus("STATUS: AI NOT CONFIGURED", 6000);
+          voiceBusy = false;
+          if (voiceWanted){ setState("listening", true); restartRecog(); }
+          return;
+        }
+        if (aiBusy){ // a request is already in flight — resume listening shortly instead of stalling
+          setTimeout(function(){ if (voiceWanted && !aiBusy){ voiceBusy = false; restartRecog(); } }, 1200);
+          return;
+        }
+        aiBusy = true; $("chatSend").disabled = true;
+        setState("thinking", true); statusEl.textContent = "STATUS: THINKING";
+        chatRequest(q).then(function(text){
+          aiBusy = false; $("chatSend").disabled = false;
+          showReply(text);
+          speakReply(text);
+        }).catch(function(err){
+          aiBusy = false; $("chatSend").disabled = false;
+          showReply("⚠ " + err.message);
+          statusEl.textContent = "STATUS: " + (voiceWanted ? "LISTENING" : "IDLE");
+          voiceBusy = false;
+          if (voiceWanted){ setState("listening", true); restartRecog(); }
+          else setState("idle", true);
+        });
+      }
       function askAI(){
-        if (!AICFG || aiBusy) return;
+        if (window.__apexPrimeTTS) window.__apexPrimeTTS();
         var q = $("chatInput").value.trim();
         if (!q) return;
         $("chatInput").value = "";
-        aiBusy = true; $("chatSend").disabled = true;
-        setState("thinking", true); statusEl.textContent = "STATUS: THINKING";
-        fetch(AICFG.base + "/chat/completions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + AICFG.key },
-          body: JSON.stringify({ model: AICFG.model, temperature: AICFG.temp,
-            messages: [ { role: "system", content: AICFG.system || "You are Apex." }, { role: "user", content: q } ] })
-        }).then(function(resp){
-          return resp.json().then(function(data){ return { ok: resp.ok, data: data }; });
-        }).then(function(out){
-          aiBusy = false; $("chatSend").disabled = false;
-          if (!out.ok){
-            var em = (out.data && out.data.error && out.data.error.message) || "request failed";
-            showReply("⚠ " + em); setState("idle", true); return;
-          }
-          var text = out.data && out.data.choices && out.data.choices[0] && out.data.choices[0].message && out.data.choices[0].message.content;
-          if (!text){ showReply("⚠ empty reply from the model"); setState("idle", true); return; }
-          showReply(text.trim());
-          setState("speaking", true);
-          var speakMs = Math.max(2200, Math.min(12000, text.length * 55));
-          setTimeout(function(){ if (S.state === "speaking" && !S.micOn) setState("idle", true); }, speakMs);
-        }).catch(function(){
-          aiBusy = false; $("chatSend").disabled = false;
-          showReply("⚠ could not reach the API — check the base URL, key and connection");
-          setState("idle", true);
+        submitQuestion(q);
+      }
+      /* ---- voice input: LOCAL Whisper speech-to-text -> the same chat -> spoken reply ----
+         Web Speech recognition (webkitSpeechRecognition) is dead inside
+         Electron: it depends on Google's proprietary speech service, which
+         third-party Chromium builds cannot use, so it never produced a
+         transcript — the mic meter reacted, but nothing was ever sent or
+         answered. Listening now runs on a local Whisper model through
+         Transformers.js (pinned @xenova/transformers 2.17.2, model
+         Xenova/whisper-base, quantized, MULTILINGUAL — Arabic + English,
+         language auto-detected). The model downloads once (~80 MB) with
+         progress in the status line, is cached by the app, and afterwards
+         speech-to-text works fully offline on this device.
+         Flow: MIC ON -> listening. The analyser level (micRMS) detects an
+         utterance: speech starts a MediaRecorder recording, ~1.2s of
+         silence (or 30s max) ends it, the audio is transcribed locally,
+         the transcript goes through the same submitQuestion() as typed
+         chat, and the reply is spoken with TTS; then listening resumes.
+         In a real Chrome/Safari browser only, Web Speech remains as a
+         fallback if the local model cannot load. Every failure (model
+         download blocked, no recorder, empty transcript) surfaces as
+         visible status/reply text — never silence. */
+      var voiceWanted = false, voiceBusy = false, voiceGen = 0;
+      var micRMS = 0; // live mic level, kept current by the analyser tick
+      var IS_ELECTRON = /Electron/i.test(navigator.userAgent || "");
+
+      /* ---------- local Whisper engine (Transformers.js) ---------- */
+      var STT_CDN = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/+esm";
+      var STT_MODEL = "Xenova/whisper-base";
+      var sttPipe = null, sttLoading = null, sttFailed = false;
+      function loadStt(){
+        if (sttPipe) return Promise.resolve(sttPipe);
+        if (sttLoading) return sttLoading;
+        sttFailed = false;
+        flashStatus("STATUS: LOADING SPEECH MODEL FIRST TIME… 0%", 3000);
+        sttLoading = import(STT_CDN).then(function(T){
+          T.env.allowLocalModels = false;
+          T.env.useBrowserCache = true;
+          try { T.env.backends.onnx.wasm.numThreads = 1; } catch(e){}
+          return T.pipeline("automatic-speech-recognition", STT_MODEL, {
+            quantized: true,
+            progress_callback: function(p){
+              if (p && p.status === "progress"){
+                flashStatus("STATUS: LOADING SPEECH MODEL FIRST TIME… " + Math.round(p.progress || 0) + "%", 3000);
+              }
+            }
+          });
+        }).then(function(pipe){
+          sttPipe = pipe; sttLoading = null;
+          return pipe;
+        }).catch(function(err){
+          sttLoading = null; sttFailed = true;
+          throw err;
+        });
+        return sttLoading;
+      }
+      function blobTo16k(blob){
+        return blob.arrayBuffer().then(function(buf){
+          var Ctor = window.AudioContext || window.webkitAudioContext;
+          var ctx = new Ctor();
+          function fail(e){ try { ctx.close(); } catch(_){} throw e; }
+          return ctx.decodeAudioData(buf).then(function(decoded){
+            try { ctx.close(); } catch(e){}
+            var len = Math.max(1, Math.ceil(decoded.duration * 16000));
+            var off = new OfflineAudioContext(1, len, 16000);
+            var src = off.createBufferSource(); src.buffer = decoded;
+            src.connect(off.destination); src.start();
+            return off.startRendering().then(function(rendered){ return rendered.getChannelData(0); });
+          }, fail);
         });
       }
+
+      /* ---------- utterance recorder + silence detection (VAD) ---------- */
+      var sttMode = "none"; // "whisper" | "webspeech"
+      var rec = null, recOn = false, recStopping = false, recDiscardNext = false;
+      var recStartT = 0, lastLoud = 0, vadTimer = 0;
+      var VAD_LEVEL = 0.09, VAD_SILENCE_MS = 1200, VAD_MAX_MS = 30000, VAD_POLL_MS = 120;
+      function recStart(){
+        if (recOn || recStopping || !micStream || typeof MediaRecorder === "undefined") return;
+        var chunks = [];
+        var mr = null;
+        try { mr = new MediaRecorder(micStream); } catch(e){ return; }
+        mr.ondataavailable = function(e){ if (e.data && e.data.size) chunks.push(e.data); };
+        mr.onstop = function(){ onRecStop(chunks); };
+        rec = mr; recOn = true; recStartT = performance.now(); lastLoud = recStartT;
+        try { mr.start(250); } catch(e){ rec = null; recOn = false; }
+      }
+      function recStop(discard){
+        if (!rec || !recOn) return;
+        recOn = false; recStopping = true;
+        if (discard) recDiscardNext = true;
+        try { rec.stop(); } catch(e){ recStopping = false; rec = null; }
+      }
+      function vadTick(){
+        if (!voiceWanted || sttFailed) return;
+        if (voiceBusy || aiBusy || ttsDrive || !S.micOn){ recStop(true); return; }
+        var now = performance.now();
+        if (!recOn){ if (micRMS > VAD_LEVEL) recStart(); return; }
+        if (micRMS > VAD_LEVEL) lastLoud = now;
+        if (now - lastLoud > VAD_SILENCE_MS || now - recStartT > VAD_MAX_MS) recStop(false);
+      }
+      function onRecStop(chunks){
+        recStopping = false; rec = null;
+        var discard = recDiscardNext; recDiscardNext = false;
+        if (discard || !voiceWanted || voiceBusy || !chunks.length) return;
+        var gen = voiceGen;
+        voiceBusy = true;
+        setState("thinking", true);
+        flashStatus("STATUS: TRANSCRIBING…", 30000);
+        var blob = new Blob(chunks, { type: chunks[0].type || "audio/webm" });
+        blobTo16k(blob).then(function(audio){
+          if (!audio || !audio.length) throw new Error("empty recording");
+          return loadStt().then(function(pipe){
+            return pipe(audio, { chunk_length_s: 30, stride_length_s: 5, task: "transcribe", language: "arabic" });
+          });
+        }).then(function(out){
+          if (gen !== voiceGen){ voiceBusy = false; return; } // mic turned off meanwhile — drop it
+          var text = (out && out.text ? String(out.text) : "").trim();
+          var cleaned = text.replace(/\[[^\]]*\]|\([^)]*\)/g, "").trim();
+          if (!cleaned){
+            voiceBusy = false;
+            if (voiceWanted){ setState("listening", true); flashStatus("STATUS: LISTENING — DIDN'T CATCH THAT, TRY AGAIN", 6000); }
+            return;
+          }
+          DIAG.heard = text; DIAG.engine = "local Whisper model"; renderDiag();
+          flashStatus("STATUS: YOU SAID — " + text, 7000);
+          if (handleVoiceCommand(text)){ /* voice command: executed locally, never sent to the chat — the ack's endSpeak owns voiceBusy */ }
+          else if (!S.entered){ voiceBusy = false; /* entry screen: only commands act — plain chatter is ignored */ }
+          else submitQuestion(text); // from here the v1.2 flow owns voiceBusy (reset in endSpeak / error paths)
+        }).catch(function(err){
+          if (gen !== voiceGen){ voiceBusy = false; return; }
+          voiceBusy = false;
+          if (voiceWanted){ setState("listening", true); flashStatus("STATUS: LISTENING — SPEECH ERROR, TRY AGAIN", 6000); }
+          showReply("⚠ Speech transcription failed: " + (err && err.message ? err.message : err));
+        });
+      }
+
+      /* ---------- Web Speech fallback (real browsers only, never Electron) ---------- */
+      var recog = null, recogRunning = false;
+      function hasWebSpeech(){ return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
+      function startWebSpeech(){
+        var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!Rec) return;
+        if (recog){ restartRecog(); return; }
+        recog = new Rec();
+        DIAG.engine = "system recognizer (ar-EG)"; renderDiag();
+        recog.continuous = true;
+        recog.interimResults = true;
+        recog.lang = "ar-EG"; // Hesham speaks Egyptian Arabic — never follow the phone UI language
+        recog.onresult = function(ev){
+          var finalText = "", interim = "";
+          for (var i = ev.resultIndex; i < ev.results.length; i++){
+            var r = ev.results[i];
+            if (r.isFinal) finalText += r[0].transcript;
+            else interim += r[0].transcript;
+          }
+          if (interim) flashStatus("STATUS: LISTENING — " + interim.trim(), 1500);
+          finalText = finalText.trim();
+          if (finalText){
+            DIAG.heard = finalText; renderDiag();
+            voiceBusy = true;
+            try { recog.stop(); } catch(e){}
+            if (handleVoiceCommand(finalText)){ /* voice command: executed locally, never sent to the chat — the ack's endSpeak restarts listening */ }
+            else if (!S.entered){ voiceBusy = false; /* entry screen: only commands act — plain chatter is ignored */ }
+            else { statusEl.textContent = "STATUS: THINKING"; submitQuestion(finalText); }
+          }
+        };
+        recog.onend = function(){ recogRunning = false; restartRecog(); };
+        recog.onerror = function(ev){
+          recogRunning = false;
+          if (ev && (ev.error === "not-allowed" || ev.error === "service-not-allowed")){
+            voiceWanted = false;
+            flashStatus("STATUS: VOICE BLOCKED — ALLOW MICROPHONE ACCESS", 9000);
+            showReply("⚠ Voice input was blocked. Allow microphone access, then tap MIC again.");
+          }
+        };
+        recog.onstart = function(){ recogRunning = true; };
+        restartRecog();
+      }
+
+      /* ---------- shared voice control (called by the mic button / exit) ---------- */
+      function restartRecog(){
+        if (!voiceWanted || voiceBusy) return;
+        if (sttMode === "webspeech" && recog && !recogRunning){ try { recog.start(); } catch(e){} }
+        /* whisper mode: the VAD poll runs whenever the mic is on and starts
+           the next utterance by itself — there is nothing to restart */
+      }
+      function startVoice(){
+        voiceWanted = true; voiceGen++;
+        if (sttMode === "webspeech"){ startWebSpeech(); return; }
+        // Real browsers (Safari/Chrome): the system speech recognizer understands
+        // Arabic far better than the tiny local Whisper model, so use it first there.
+        // Whisper stays the engine inside Electron, where Web Speech is dead.
+        if (!IS_ELECTRON && hasWebSpeech()){
+          sttMode = "webspeech";
+          statusEl.textContent = "STATUS: LISTENING";
+          startWebSpeech();
+          return;
+        }
+        sttMode = "whisper";
+        if (typeof MediaRecorder === "undefined"){
+          sttFailed = true;
+          flashStatus("STATUS: VOICE RECORDING NOT SUPPORTED IN THIS BROWSER", 9000);
+          showReply("⚠ This browser cannot record microphone audio for speech recognition.");
+          return;
+        }
+        if (!vadTimer) vadTimer = setInterval(vadTick, VAD_POLL_MS);
+        loadStt().then(function(){
+          if (voiceWanted && !voiceBusy) statusEl.textContent = "STATUS: LISTENING";
+        }, function(err){
+          if (!voiceWanted) return;
+          if (!IS_ELECTRON && hasWebSpeech()){
+            sttMode = "webspeech";
+            if (vadTimer){ clearInterval(vadTimer); vadTimer = 0; }
+            recStop(true);
+            statusEl.textContent = "STATUS: LISTENING";
+            startWebSpeech();
+          } else {
+            flashStatus("STATUS: SPEECH MODEL FAILED TO LOAD — CHECK CONNECTION, THEN TOGGLE MIC TO RETRY", 10000);
+            showReply("⚠ The on-device speech model could not be downloaded (" + (err && err.message ? err.message : "network error") + "). It downloads once (~80 MB) and is then cached on this device. Check your connection, then toggle MIC off and on to retry.");
+          }
+        });
+      }
+      function stopVoice(){
+        voiceWanted = false; voiceBusy = false; voiceGen++;
+        if (vadTimer){ clearInterval(vadTimer); vadTimer = 0; }
+        recStop(true);
+        if (recog){ try { recog.stop(); } catch(e){} }
+      }
+
+      /* ================= voice commands (the reel's layer) =================
+         Every recognized transcript is checked against a small command set
+         BEFORE it can reach the chat: a matched command runs locally and is
+         never sent as a message. "open your humanoid" on the entry screen
+         runs the exact tap entry (the APEX-UI fade into the birth); inside,
+         head-turn commands drive the same attention target the pointer and
+         the finger use — head only, body fixed — held ~2.5s, then normal
+         tracking resumes. Each command is confirmed with one short spoken
+         ack in the user's language, and the conversation loop carries on. */
+      var voiceCmdHold = { x: 0, y: 0, until: 0 };
+      var VOICE_CMDS = [
+        { cmd: "open",   phrases: ["open your humanoid", "open the humanoid", "افتح الهيومانويد", "افتحي الهيومانويد", "شغل الهيومانويد", "شغّل الهيومانويد"] },
+        { cmd: "right",  phrases: ["turn your head right", "look right", "لف راسك يمين", "بص يمين", "بصي يمين"] },
+        { cmd: "left",   phrases: ["turn your head left", "look left", "لف راسك شمال", "بص شمال", "بصي شمال"] },
+        { cmd: "center", phrases: ["look at me", "look forward", "center", "بصلي", "بصيلي", "ارجع"] }
+      ];
+      function normalizeCmdText(t){
+        return String(t || "").toLowerCase()
+          .replace(/[ً-ٰٟ]/g, "")
+          .replace(/ـ/g, "")
+          .replace(/\s+/g, " ").trim();
+      }
+      function matchVoiceCommand(text){
+        var norm = normalizeCmdText(text);
+        if (!norm) return null;
+        for (var i = 0; i < VOICE_CMDS.length; i++){
+          var phrases = VOICE_CMDS[i].phrases;
+          for (var j = 0; j < phrases.length; j++){
+            if (norm.indexOf(normalizeCmdText(phrases[j])) >= 0) return VOICE_CMDS[i].cmd;
+          }
+        }
+        return null;
+      }
+      function handleVoiceCommand(text){
+        var cmd = matchVoiceCommand(text);
+        if (!cmd) return false;
+        var isAr = /[؀-ۿ]/.test(text);
+        if (cmd === "open"){
+          if (!S.entered){
+            flashStatus("STATUS: OPENING…", 3000);
+            if (window.__apexUiEnter) window.__apexUiEnter(); else enter();
+          }
+          speakReply(isAr ? "حاضر" : "Okay");
+          return true;
+        }
+        if (!S.entered) return false; // head commands only exist inside the humanoid
+        if (cmd === "right"){ voiceCmdHold.x = 1; voiceCmdHold.y = 0; voiceCmdHold.until = performance.now() + 2500; }
+        else if (cmd === "left"){ voiceCmdHold.x = -1; voiceCmdHold.y = 0; voiceCmdHold.until = performance.now() + 2500; }
+        else { voiceCmdHold.x = 0; voiceCmdHold.y = 0; voiceCmdHold.until = performance.now() + 1200; }
+        flashStatus(cmd === "right" ? "STATUS: LOOKING RIGHT" : (cmd === "left" ? "STATUS: LOOKING LEFT" : "STATUS: LOOKING AT YOU"), 3000);
+        speakReply(isAr ? "حاضر" : "Okay");
+        return true;
+      }
+
+      /* ---------- entry-screen voice: tap the mic, say the word, walk in ----------
+         Reuses the app's own STT paths (startVoice picks the system
+         recognizer in real browsers, the local Whisper pipeline in
+         Electron); on the entry screen only commands act (see the
+         transcript sinks above). After "open", the very same session keeps
+         running inside the humanoid as the normal conversation. */
+      var gateVoiceOn = false;
+      function setGateMicUI(){
+        document.querySelectorAll(".gateMicBtn").forEach(function(b){
+          if (gateVoiceOn){ b.textContent = "🎙 بسمعك… قول: افتح الهيومانويد · listening — say it"; b.classList.add("gateMicOn"); }
+          else { b.textContent = "🎙 قول: افتح الهيومانويد · say: open your humanoid"; b.classList.remove("gateMicOn"); }
+        });
+      }
+      function stopGateVoice(){
+        gateVoiceOn = false;
+        if (sttMode === "whisper" && S.micOn) stopMic(); else stopVoice();
+        setGateMicUI();
+      }
+      function startGateVoice(){
+        if (gateVoiceOn && !voiceWanted && !S.entered){ gateVoiceOn = false; setGateMicUI(); } // session was stopped inside (EXIT / MIC) — resync
+        if (window.__apexPrimeTTS) window.__apexPrimeTTS();
+        try { ensureAudio(); } catch(e){}
+        if (gateVoiceOn){ stopGateVoice(); return; }
+        if (S.entered) return;
+        gateVoiceOn = true; setGateMicUI();
+        if (!IS_ELECTRON && hasWebSpeech()){ startVoice(); return; }
+        /* Electron / no system recognizer: open the mic exactly like the
+           MIC button does (stream + analyser feeding micRMS), then let the
+           shared Whisper path (VAD + local model) take it from there */
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ gateVoiceOn = false; setGateMicUI(); return; }
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+          if (!gateVoiceOn){ stream.getTracks().forEach(function(tr){ tr.stop(); }); return; }
+          micStream = stream;
+          var Ctor = window.AudioContext || window.webkitAudioContext;
+          micCtx = new Ctor();
+          var srcNode = micCtx.createMediaStreamSource(stream);
+          var an = micCtx.createAnalyser(); an.fftSize = 512;
+          srcNode.connect(an);
+          var data = new Uint8Array(an.fftSize);
+          (function tick(){
+            an.getByteTimeDomainData(data);
+            var sum = 0;
+            for (var i = 0; i < data.length; i++){ var v = (data[i] - 128) / 128; sum += v * v; }
+            micRMS = Math.min(1, Math.sqrt(sum / data.length) * 6);
+            if (!ttsDrive) S.energy += (micRMS - S.energy) * 0.35;
+            micRAF = requestAnimationFrame(tick);
+          })();
+          S.micOn = true;
+          $("micBtn").textContent = "🎙 MIC ON"; $("micBtn").classList.add("micOn");
+          startVoice();
+        }).catch(function(){ gateVoiceOn = false; setGateMicUI(); });
+      }
+      document.querySelectorAll(".gateMicBtn").forEach(function(b){ b.addEventListener("click", startGateVoice); });
+      loadAiConfig();
       $("chatSend").addEventListener("click", askAI);
       $("chatInput").addEventListener("keydown", function(e){ if (e.key === "Enter") askAI(); });
 
@@ -2298,6 +2861,7 @@
           if (window.__apexEnterHumanoid) window.__apexEnterHumanoid();
         }, 480);
       }
+      window.__apexUiEnter = enterHumanoid;
       var coreTap = document.getElementById("coreTap");
       coreTap.addEventListener("click", enterHumanoid);
       coreTap.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); enterHumanoid(); } });
