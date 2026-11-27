@@ -195,6 +195,8 @@
         .ov-time { font-size: 28px; }
         #orbStatus { bottom: 10px; }
       }
+      .gateMicBtn.gateMicOn { background: rgba(245,166,35,.30) !important; color: #fff2d8 !important; border-color: #ffd080 !important; }
+      #gate .gateMicBtn.gateMicOn { background: rgba(34,211,238,.20) !important; color: #ecfeff !important; border-color: rgba(34,211,238,.8) !important; }
     </style>
   </head>
   <body>
@@ -252,6 +254,8 @@
       </div>
 
       <div id="coreTap" role="button" tabindex="0" aria-label="Apex core — tap to enter the humanoid"></div>
+
+      <button class="gateMicBtn" type="button" aria-label="Voice entry — say: open your humanoid" style="position:absolute;left:50%;transform:translateX(-50%);bottom:172px;z-index:19;padding:10px 18px;min-height:44px;background:rgba(3,2,0,.55);color:#ffd080;border:1px solid rgba(245,166,35,.55);border-radius:999px;font-family:'Share Tech Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;cursor:pointer;white-space:nowrap;max-width:92vw;">🎙 قول: افتح الهيومانويد · say: open your humanoid</button>
 
       <div id="orbStatus">
         <svg width="420" height="130" viewBox="0 0 420 130" fill="none" style="max-width:100vw">
@@ -324,6 +328,7 @@
         <div class="title">APEX HUMANOID</div>
         <div class="sub">a figure of light that assembles itself</div>
         <button id="enterBtn" type="button">ENTER</button>
+        <button class="gateMicBtn" type="button" aria-label="Voice entry — say: open your humanoid" style="display:block;margin:14px auto 0;padding:10px 18px;min-height:44px;background:transparent;color:#a5f3fc;border:1px solid rgba(34,211,238,.4);border-radius:10px;font-size:12px;letter-spacing:.08em;cursor:pointer;">🎙 قول: افتح الهيومانويد · say: open your humanoid</button>
         <div class="note">the click opens the audio - the birth has a sound</div>
       </div>
     </div>
@@ -1340,8 +1345,13 @@
            uBreathe = 1 + 0.004 sin(0.9t), anchored where it stands. */
         /* dt was measured once at the top of this frame (see above) */
         var J = S.state === "speaking" ? 0.55 : (S.state === "listening" ? 1.1 : 1);
-        var tYaw = Math.max(-1, Math.min(1, S.attention.x)) * 0.44 * J;
-        var tPitch = Math.max(-1, Math.min(1, S.attention.y)) * 0.20 * J;
+        /* voice-command head hold: while a spoken turn command is active it
+           overrides the pointer/finger attention target — through the same
+           gaze path, so only the head turns and the body stays fixed */
+        var attnX = S.attention.x, attnY = S.attention.y;
+        if (now < voiceCmdHold.until){ attnX = voiceCmdHold.x; attnY = voiceCmdHold.y; }
+        var tYaw = Math.max(-1, Math.min(1, attnX)) * 0.44 * J;
+        var tPitch = Math.max(-1, Math.min(1, attnY)) * 0.20 * J;
         var gk = 1 - Math.exp(-dt * 4.2);
         S.yaw += (tYaw - S.yaw) * gk;
         S.pitch += (tPitch - S.pitch) * gk;
@@ -2105,7 +2115,9 @@
           }
           DIAG.heard = text; DIAG.engine = "local Whisper model"; renderDiag();
           flashStatus("STATUS: YOU SAID — " + text, 7000);
-          submitQuestion(text); // from here the v1.2 flow owns voiceBusy (reset in endSpeak / error paths)
+          if (handleVoiceCommand(text)){ /* voice command: executed locally, never sent to the chat — the ack's endSpeak owns voiceBusy */ }
+          else if (!S.entered){ voiceBusy = false; /* entry screen: only commands act — plain chatter is ignored */ }
+          else submitQuestion(text); // from here the v1.2 flow owns voiceBusy (reset in endSpeak / error paths)
         }).catch(function(err){
           if (gen !== voiceGen){ voiceBusy = false; return; }
           voiceBusy = false;
@@ -2139,8 +2151,9 @@
             DIAG.heard = finalText; renderDiag();
             voiceBusy = true;
             try { recog.stop(); } catch(e){}
-            statusEl.textContent = "STATUS: THINKING";
-            submitQuestion(finalText);
+            if (handleVoiceCommand(finalText)){ /* voice command: executed locally, never sent to the chat — the ack's endSpeak restarts listening */ }
+            else if (!S.entered){ voiceBusy = false; /* entry screen: only commands act — plain chatter is ignored */ }
+            else { statusEl.textContent = "STATUS: THINKING"; submitQuestion(finalText); }
           }
         };
         recog.onend = function(){ recogRunning = false; restartRecog(); };
@@ -2205,6 +2218,114 @@
         recStop(true);
         if (recog){ try { recog.stop(); } catch(e){} }
       }
+
+      /* ================= voice commands (the reel's layer) =================
+         Every recognized transcript is checked against a small command set
+         BEFORE it can reach the chat: a matched command runs locally and is
+         never sent as a message. "open your humanoid" on the entry screen
+         runs the exact tap entry (the APEX-UI fade into the birth); inside,
+         head-turn commands drive the same attention target the pointer and
+         the finger use — head only, body fixed — held ~2.5s, then normal
+         tracking resumes. Each command is confirmed with one short spoken
+         ack in the user's language, and the conversation loop carries on. */
+      var voiceCmdHold = { x: 0, y: 0, until: 0 };
+      var VOICE_CMDS = [
+        { cmd: "open",   phrases: ["open your humanoid", "open the humanoid", "افتح الهيومانويد", "افتحي الهيومانويد", "شغل الهيومانويد", "شغّل الهيومانويد"] },
+        { cmd: "right",  phrases: ["turn your head right", "look right", "لف راسك يمين", "بص يمين", "بصي يمين"] },
+        { cmd: "left",   phrases: ["turn your head left", "look left", "لف راسك شمال", "بص شمال", "بصي شمال"] },
+        { cmd: "center", phrases: ["look at me", "look forward", "center", "بصلي", "بصيلي", "ارجع"] }
+      ];
+      function normalizeCmdText(t){
+        return String(t || "").toLowerCase()
+          .replace(/[ً-ٰٟ]/g, "")
+          .replace(/ـ/g, "")
+          .replace(/\s+/g, " ").trim();
+      }
+      function matchVoiceCommand(text){
+        var norm = normalizeCmdText(text);
+        if (!norm) return null;
+        for (var i = 0; i < VOICE_CMDS.length; i++){
+          var phrases = VOICE_CMDS[i].phrases;
+          for (var j = 0; j < phrases.length; j++){
+            if (norm.indexOf(normalizeCmdText(phrases[j])) >= 0) return VOICE_CMDS[i].cmd;
+          }
+        }
+        return null;
+      }
+      function handleVoiceCommand(text){
+        var cmd = matchVoiceCommand(text);
+        if (!cmd) return false;
+        var isAr = /[؀-ۿ]/.test(text);
+        if (cmd === "open"){
+          if (!S.entered){
+            flashStatus("STATUS: OPENING…", 3000);
+            if (window.__apexUiEnter) window.__apexUiEnter(); else enter();
+          }
+          speakReply(isAr ? "حاضر" : "Okay");
+          return true;
+        }
+        if (!S.entered) return false; // head commands only exist inside the humanoid
+        if (cmd === "right"){ voiceCmdHold.x = 1; voiceCmdHold.y = 0; voiceCmdHold.until = performance.now() + 2500; }
+        else if (cmd === "left"){ voiceCmdHold.x = -1; voiceCmdHold.y = 0; voiceCmdHold.until = performance.now() + 2500; }
+        else { voiceCmdHold.x = 0; voiceCmdHold.y = 0; voiceCmdHold.until = performance.now() + 1200; }
+        flashStatus(cmd === "right" ? "STATUS: LOOKING RIGHT" : (cmd === "left" ? "STATUS: LOOKING LEFT" : "STATUS: LOOKING AT YOU"), 3000);
+        speakReply(isAr ? "حاضر" : "Okay");
+        return true;
+      }
+
+      /* ---------- entry-screen voice: tap the mic, say the word, walk in ----------
+         Reuses the app's own STT paths (startVoice picks the system
+         recognizer in real browsers, the local Whisper pipeline in
+         Electron); on the entry screen only commands act (see the
+         transcript sinks above). After "open", the very same session keeps
+         running inside the humanoid as the normal conversation. */
+      var gateVoiceOn = false;
+      function setGateMicUI(){
+        document.querySelectorAll(".gateMicBtn").forEach(function(b){
+          if (gateVoiceOn){ b.textContent = "🎙 بسمعك… قول: افتح الهيومانويد · listening — say it"; b.classList.add("gateMicOn"); }
+          else { b.textContent = "🎙 قول: افتح الهيومانويد · say: open your humanoid"; b.classList.remove("gateMicOn"); }
+        });
+      }
+      function stopGateVoice(){
+        gateVoiceOn = false;
+        if (sttMode === "whisper" && S.micOn) stopMic(); else stopVoice();
+        setGateMicUI();
+      }
+      function startGateVoice(){
+        if (gateVoiceOn && !voiceWanted && !S.entered){ gateVoiceOn = false; setGateMicUI(); } // session was stopped inside (EXIT / MIC) — resync
+        if (window.__apexPrimeTTS) window.__apexPrimeTTS();
+        try { ensureAudio(); } catch(e){}
+        if (gateVoiceOn){ stopGateVoice(); return; }
+        if (S.entered) return;
+        gateVoiceOn = true; setGateMicUI();
+        if (!IS_ELECTRON && hasWebSpeech()){ startVoice(); return; }
+        /* Electron / no system recognizer: open the mic exactly like the
+           MIC button does (stream + analyser feeding micRMS), then let the
+           shared Whisper path (VAD + local model) take it from there */
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ gateVoiceOn = false; setGateMicUI(); return; }
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+          if (!gateVoiceOn){ stream.getTracks().forEach(function(tr){ tr.stop(); }); return; }
+          micStream = stream;
+          var Ctor = window.AudioContext || window.webkitAudioContext;
+          micCtx = new Ctor();
+          var srcNode = micCtx.createMediaStreamSource(stream);
+          var an = micCtx.createAnalyser(); an.fftSize = 512;
+          srcNode.connect(an);
+          var data = new Uint8Array(an.fftSize);
+          (function tick(){
+            an.getByteTimeDomainData(data);
+            var sum = 0;
+            for (var i = 0; i < data.length; i++){ var v = (data[i] - 128) / 128; sum += v * v; }
+            micRMS = Math.min(1, Math.sqrt(sum / data.length) * 6);
+            if (!ttsDrive) S.energy += (micRMS - S.energy) * 0.35;
+            micRAF = requestAnimationFrame(tick);
+          })();
+          S.micOn = true;
+          $("micBtn").textContent = "🎙 MIC ON"; $("micBtn").classList.add("micOn");
+          startVoice();
+        }).catch(function(){ gateVoiceOn = false; setGateMicUI(); });
+      }
+      document.querySelectorAll(".gateMicBtn").forEach(function(b){ b.addEventListener("click", startGateVoice); });
       loadAiConfig();
       $("chatSend").addEventListener("click", askAI);
       $("chatInput").addEventListener("keydown", function(e){ if (e.key === "Enter") askAI(); });
@@ -2741,6 +2862,7 @@
           if (window.__apexEnterHumanoid) window.__apexEnterHumanoid();
         }, 480);
       }
+      window.__apexUiEnter = enterHumanoid;
       var coreTap = document.getElementById("coreTap");
       coreTap.addEventListener("click", enterHumanoid);
       coreTap.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); enterHumanoid(); } });
