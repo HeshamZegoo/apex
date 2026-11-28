@@ -37,6 +37,15 @@
       #humCanvas { width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 140ms ease; }
       #rings { position: absolute; inset: 0; pointer-events: none; display: none; }
       #rings img { position: absolute; inset: 0; width: 100%; height: 100%; mix-blend-mode: plus-lighter; }
+      /* speaking rings — the demo orb's sound-wave circles, humanoid scene:
+         visible only while Apex is actually speaking (TTS playback) */
+      @keyframes soundWaveActive { 0% { r: 155px; opacity: .55; stroke-width: 1.5px; } 100% { r: 245px; opacity: 0; stroke-width: .5px; } }
+      #speakRings { position: absolute; left: 50%; top: 42%; width: 280px; height: 280px; transform: translate(-50%, -50%); pointer-events: none; display: none; overflow: visible; }
+      #speakRings.show { display: block; }
+      #speakRings circle { fill: none; animation: soundWaveActive 2s ease-out infinite; }
+      #speakRings .sw-1 { animation-delay: .5s; }
+      #speakRings .sw-2 { animation-delay: 1s; }
+      #speakRings .sw-3 { animation-delay: 1.5s; }
       #status { position: absolute; right: 5.8%; top: 21%; max-width: 27%; font-size: clamp(9px, 1.05vmin, 13px); line-height: 1.5; letter-spacing: 0.16em; color: var(--cyan); text-align: right; text-shadow: 0 0 12px rgba(34,211,238,.53); pointer-events: none; }
       #halo { position: fixed; left: 0; top: 0; width: 0; height: 0; border-radius: 50%; pointer-events: none; mix-blend-mode: screen; opacity: 0; z-index: 5; background: radial-gradient(circle, rgba(0,0,0,0) 0 58%, rgba(150,225,255,0.8) 77%, rgba(0,0,0,0) 96%); will-change: width, height, left, top, opacity; }
 
@@ -50,6 +59,7 @@
       #gesturePanel .gpTitle { color: var(--cyan); letter-spacing: .18em; font-size: 11px; margin-bottom: 6px; }
       #gesturePanel button { margin-top: 10px; width: 100%; padding: 9px 10px; min-height: 40px; background: rgba(34,211,238,.12); color: var(--cyan); border: 1px solid rgba(34,211,238,.4); border-radius: 7px; font-size: 11px; letter-spacing: .14em; cursor: pointer; }
       #gestureMsg { color: var(--dim); margin-top: 8px; font-size: 10px; min-height: 14px; }
+
 
       /* ---------- AI settings side panel ---------- */
       #aiBtn { right: 18px; left: auto; }
@@ -74,24 +84,7 @@
       #ttsTest { margin-top: 10px; width: 100%; padding: 10px; min-height: 44px; background: rgba(87,230,169,.12); color: #57e6a9; border: 1px solid rgba(87,230,169,.4); border-radius: 8px; font-size: 11px; letter-spacing: .14em; cursor: pointer; }
       #diagText { color: var(--dim); margin-top: 8px; font-size: 10px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
 
-      /* ---------- AI chat ---------- */
-      #chatBar { position: fixed; bottom: 54px; left: 50%; transform: translateX(-50%); z-index: 190; display: none; gap: 6px; width: min(620px, calc(100vw - 20px)); }
-      #chatBar.show { display: flex; }
-      #chatInput { flex: 1; min-height: 44px; background: rgba(4,16,22,.92); color: #dff6fd; border: 1px solid rgba(34,211,238,.4); border-radius: 8px; padding: 10px 12px; font-family: var(--font-ui); font-size: 13px; }
-      #chatInput:focus { outline: 1px solid rgba(34,211,238,.65); }
-      #chatSend { min-height: 44px; padding: 0 18px; background: rgba(34,211,238,.16); color: var(--cyan); border: 1px solid rgba(34,211,238,.5); border-radius: 8px; font-size: 12px; letter-spacing: .16em; cursor: pointer; }
-      #chatSend:disabled { opacity: .45; cursor: default; }
-      #aiReply { position: fixed; bottom: 108px; left: 50%; transform: translateX(-50%); z-index: 190; width: min(620px, calc(100vw - 20px)); background: rgba(4,16,22,.92); border: 1px solid rgba(34,211,238,.3); border-radius: 10px; color: #dff6fd; padding: 12px 14px; font-size: 13px; line-height: 1.65; letter-spacing: .03em; display: none; max-height: 32dvh; overflow-y: auto; }
-      #aiReply.show { display: block; }
-      #aiReply .who { color: var(--cyan); font-size: 10px; letter-spacing: .18em; display: block; margin-bottom: 5px; }
-      @media (max-width: 560px) { #aiReply { bottom: 150px; } #chatBar { bottom: 96px; } }
 
-      /* ---------- bottom bar ---------- */
-      #bar { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; gap: 6px; font-family: var(--font-ui); flex-wrap: wrap; justify-content: center; max-width: 100vw; padding: 0 6px; }
-      #bar button { padding: 5px 11px; min-height: 36px; background: #0a0f12; color: var(--pale); border: 1px solid rgba(34,211,238,.33); border-radius: 6px; font-size: 11px; cursor: pointer; font-family: var(--font-ui); white-space: nowrap; }
-      #bar button.active { background: rgba(34,211,238,.2); }
-      #bar button.micOn { background: rgba(245,166,35,.2); color: #f5a623; border-color: rgba(245,166,35,.33); }
-      #bar button.soundOff { color: var(--dim); }
       @media (max-width: 560px) {
         #status { top: 15%; max-width: 40%; }
         #gestureBtn { left: 84px; }
@@ -125,6 +118,9 @@
       .uw-blink-0 { animation-delay: 0s; } .uw-blink-1 { animation-delay: .4s; } .uw-blink-2 { animation-delay: .8s; }
       @keyframes uwSoundWave { 0% { r: 155px; opacity: .18; stroke-width: .8px; } 60% { opacity: .06; } 100% { r: 230px; opacity: 0; stroke-width: .3px; } }
       .uw-sound-wave { animation: uwSoundWave 3.5s ease-out infinite; }
+      /* while the HUD conversation is speaking, the orb waves switch to the
+         demo's active sound-wave animation (brighter, faster, wider) */
+      #uiWorld.hud-speaking .uw-sound-wave { animation-name: soundWaveActive; animation-duration: 2s; }
       .uw-wave-0 { animation-delay: 0s; } .uw-wave-1 { animation-delay: .9s; } .uw-wave-2 { animation-delay: 1.8s; } .uw-wave-3 { animation-delay: 2.7s; }
       @keyframes uwRingBreathe { 0%, 100% { opacity: .9 } 50% { opacity: 1 } }
       .uw-ring-breathe { animation: uwRingBreathe 3s ease-in-out infinite; }
@@ -341,6 +337,7 @@
       <div id="frame" data-testid="humanoid-portrait-frame">
         <canvas id="humCanvas" aria-label="Animated cyan and gold Apex humanoid"></canvas>
         <div id="rings" aria-hidden="true"></div>
+        <svg id="speakRings" viewBox="0 0 280 280" aria-hidden="true"><circle cx="140" cy="140" r="155" stroke="#ffffff" class="sw-0"/><circle cx="140" cy="140" r="155" stroke="#ffd080" class="sw-1"/><circle cx="140" cy="140" r="155" stroke="#f5a623" class="sw-2"/><circle cx="140" cy="140" r="155" stroke="#e8f6fb" class="sw-3"/></svg>
         <div id="status" aria-live="polite">STATUS: IDLE</div>
       </div>
 
@@ -358,6 +355,8 @@
         <button id="camToggle" type="button">Open camera now</button>
         <div id="gestureMsg"></div>
       </div>
+
+
 
       <aside id="aiPanel" aria-label="AI settings">
         <div class="apTitle">AI SETTINGS</div>
@@ -619,24 +618,11 @@ Your highest priority is to make every interaction feel intelligent, personal to
         <div id="diagText">voice check: —</div>
       </aside>
 
-      <div id="aiReply" role="status"></div>
-      <div id="chatBar">
-        <input id="chatInput" type="text" placeholder="Ask Apex anything…" autocomplete="off" />
-        <button id="chatSend" type="button">ASK</button>
-      </div>
 
-      <div id="bar">
-        <button type="button" data-state="idle" class="stateBtn active">idle</button>
-        <button type="button" data-state="listening" class="stateBtn">listening</button>
-        <button type="button" data-state="thinking" class="stateBtn">thinking</button>
-        <button type="button" data-state="speaking" class="stateBtn">speaking</button>
-        <button type="button" id="micBtn" title="Drive the speaking face from your microphone">🎙 MIC OFF</button>
-        <button type="button" id="replayBtn" title="Run the birth again">↻ REPLAY</button>
-        <button type="button" id="soundBtn">♪ SOUND ON</button>
-      </div>
+
+
     </section>
 
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
     <script>
     (function(){
       "use strict";
@@ -1211,8 +1197,6 @@ Your highest priority is to make every interaction feel intelligent, personal to
       }
       function setSound(on){
         S.soundOn = on;
-        $("soundBtn").textContent = on ? "♪ SOUND ON" : "♪ SOUND OFF";
-        $("soundBtn").classList.toggle("soundOff", !on);
         if (AC && master) master.gain.linearRampToValueAtTime(on ? 0.72 * 0.62 : 0.0001, AC.currentTime + 0.25);
         if (on) ensureAudio();
       }
@@ -1228,10 +1212,8 @@ Your highest priority is to make every interaction feel intelligent, personal to
         trans.from = trans.to; trans.to = st; trans.start = performance.now();
         S.state = st;
         if (hudTalk && !S.entered && window.__apexHudState) window.__apexHudState(st);
-        document.querySelectorAll(".stateBtn").forEach(function(b){
-          b.classList.toggle("active", b.getAttribute("data-state") === st);
-        });
         ringsEl.style.display = st === "listening" ? "block" : "none";
+        var speakRingsEl = $("speakRings"); if (speakRingsEl) speakRingsEl.classList.toggle("show", st === "speaking");
         if (!silent) stateBlip(st);
       }
 
@@ -1770,47 +1752,57 @@ Your highest priority is to make every interaction feel intelligent, personal to
         })(start);
       }
 
-      /* ============================== mic ============================== */
-      var micStream = null, micCtx = null, micRAF = 0;
+      /* ================= mic stream (owned by the voice conversation) =================
+         There is no mic button any more: this stream exists solely to feed
+         the voice conversation — the analyser level drives micRMS (the
+         Whisper VAD) and the talking energy while the user speaks. It is
+         opened by the entry / HUD voice starters and by humanoid entry,
+         and closed on EXIT. The SPEAKING face is driven by actual TTS
+         playback (ttsDrive), never by this stream. */
+      var micStream = null, micCtx = null, micRAF = 0, micOpening = null;
+      function attachMicStream(stream){
+        micStream = stream;
+        var Ctor = window.AudioContext || window.webkitAudioContext;
+        micCtx = new Ctor();
+        var srcNode = micCtx.createMediaStreamSource(stream);
+        var an = micCtx.createAnalyser(); an.fftSize = 512;
+        srcNode.connect(an);
+        var data = new Uint8Array(an.fftSize);
+        (function tick(){
+          an.getByteTimeDomainData(data);
+          var sum = 0;
+          for (var i = 0; i < data.length; i++){ var v = (data[i] - 128) / 128; sum += v * v; }
+          var rms = Math.min(1, Math.sqrt(sum / data.length) * 6);
+          micRMS = rms; // live level for the voice utterance detector
+          if (!ttsDrive) S.energy += (rms - S.energy) * 0.35;
+          micRAF = requestAnimationFrame(tick);
+        })();
+        S.micOn = true;
+      }
+      function openMicStream(){
+        if (S.micOn) return Promise.resolve(true);
+        if (micOpening) return micOpening;
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ flashStatus("STATUS: NO MICROPHONE ACCESS IN THIS BROWSER", 9000); return Promise.resolve(false); }
+        var settled = false;
+        var watchdog = setTimeout(function(){ if (!settled && !S.micOn) flashStatus("STATUS: MIC UNAVAILABLE IN THIS BROWSER \u2014 OPEN THIS PAGE IN SAFARI", 9000); }, 5000);
+        micOpening = navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+          settled = true; clearTimeout(watchdog); micOpening = null;
+          if (!voiceWanted && !gateVoiceOn){ stream.getTracks().forEach(function(tr){ tr.stop(); }); return false; }
+          attachMicStream(stream);
+          return true;
+        }).catch(function(){ settled = true; clearTimeout(watchdog); micOpening = null; flashStatus("STATUS: MIC BLOCKED — ALLOW MICROPHONE ACCESS", 9000); return false; });
+        return micOpening;
+      }
       function stopMic(){
         cancelAnimationFrame(micRAF);
         if (micStream) micStream.getTracks().forEach(function(tr){ tr.stop(); });
         if (micCtx) micCtx.close();
         micStream = null; micCtx = null; S.micOn = false; S.energy = 0;
-        $("micBtn").textContent = "🎙 MIC OFF"; $("micBtn").classList.remove("micOn");
         stopVoice();
       }
       function flashStatus(text, ms){ statusOverrideText = text; statusHoldUntil = performance.now() + (ms || 4000); statusEl.textContent = text; }
-      $("micBtn").addEventListener("click", function(){
-        if (S.micOn){ stopMic(); if (S.state === "speaking" || S.state === "listening") setState("idle"); return; }
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ flashStatus("STATUS: NO MICROPHONE ACCESS IN THIS BROWSER", 9000); return; }
-        var micSettled = false;
-        var micWatchdog = setTimeout(function(){ if (!micSettled && !S.micOn) flashStatus("STATUS: MIC UNAVAILABLE IN THIS BROWSER \u2014 OPEN THIS PAGE IN SAFARI", 9000); }, 5000);
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
-          micSettled = true; clearTimeout(micWatchdog);
-          micStream = stream;
-          var Ctor = window.AudioContext || window.webkitAudioContext;
-          micCtx = new Ctor();
-          var srcNode = micCtx.createMediaStreamSource(stream);
-          var an = micCtx.createAnalyser(); an.fftSize = 512;
-          srcNode.connect(an);
-          var data = new Uint8Array(an.fftSize);
-          (function tick(){
-            an.getByteTimeDomainData(data);
-            var sum = 0;
-            for (var i = 0; i < data.length; i++){ var v = (data[i] - 128) / 128; sum += v * v; }
-            var rms = Math.min(1, Math.sqrt(sum / data.length) * 6);
-            micRMS = rms; // live level for the voice utterance detector
-            if (!ttsDrive) S.energy += (rms - S.energy) * 0.35;
-            micRAF = requestAnimationFrame(tick);
-          })();
-          S.micOn = true;
-          $("micBtn").textContent = "🎙 MIC ON"; $("micBtn").classList.add("micOn");
-          setState("listening");
-          statusEl.textContent = "STATUS: LISTENING";
-          startVoice();
-        }).catch(function(){ micSettled = true; clearTimeout(micWatchdog); flashStatus("STATUS: MIC BLOCKED — ALLOW MICROPHONE ACCESS", 9000); });
-      });
+
+
 
       /* ============================== camera / hand gesture ============================== */
       var camStream = null, handsObj = null, camRAF = 0, lastPalm = 0, lastPinch = 0;
@@ -1944,10 +1936,10 @@ Your highest priority is to make every interaction feel intelligent, personal to
       /* ============================== AI settings + chat + voice ==============================
          The side panel collects the user's own AI model + API key. DONE
          saves them to localStorage on this device, activates the model,
-         shows the ask bar and hides the panel; on startup the saved
+         and hides the panel; on startup the saved
          config is loaded back, pre-filled and activated automatically,
-         so the user never re-types it. Asking (typed, or spoken through
-         the mic) calls the provider's OpenAI-compatible chat endpoint
+         so the user never re-types it. Asking (spoken through
+         the voice conversation) calls the provider's OpenAI-compatible chat endpoint
          directly with the user's key; Apex thinks, then SPEAKS the reply
          back with text-to-speech while the face speaks, then listens
          again if the mic is on. */
@@ -1987,8 +1979,6 @@ Your highest priority is to make every interaction feel intelligent, personal to
         aiState.textContent = "AI: " + cfg.model + " — active";
         aiState.classList.add("on");
         var btn = $("aiBtn"); btn.textContent = "AI • " + cfg.model; btn.classList.add("aiOn");
-        if (!silent) $("chatBar").classList.add("show");
-        if (S.entered) $("chatBar").classList.add("show");
       }
       function loadAiConfig(){
         var cfg = null;
@@ -2054,11 +2044,11 @@ Your highest priority is to make every interaction feel intelligent, personal to
         if (S.entered){ statusEl.textContent = "STATUS: " + S.state.toUpperCase() + " · AI READY"; if (AC && S.soundOn) stateBlip("listening"); }
       });
       function showReply(text){
-        var r = $("aiReply");
-        r.innerHTML = "";
-        var who = document.createElement("span"); who.className = "who"; who.textContent = "APEX · " + (AICFG ? AICFG.model : "");
-        r.appendChild(who); r.appendChild(document.createTextNode(text));
-        r.classList.add("show");
+        /* Replies are SPOKEN, never rendered as text in this voice-only
+           build. This sink remains only for genuine config/error
+           warnings, which belong on the status line — never as a
+           reply transcript. */
+        if (text) flashStatus("STATUS: " + String(text).replace(/^\u26a0\s*/, "").slice(0, 140), 6000);
       }
       function chatRequest(q, onDelta){
         var ac = (typeof AbortController !== "undefined") ? new AbortController() : null;
@@ -2459,24 +2449,22 @@ Your highest priority is to make every interaction feel intelligent, personal to
           setTimeout(function(){ if (voiceWanted && !aiBusy){ voiceBusy = false; restartRecog(); } }, 1200);
           return;
         }
-        aiBusy = true; $("chatSend").disabled = true;
+        aiBusy = true;
         setState("thinking", true); statusEl.textContent = "STATUS: THINKING";
         var speechSession = null, speechFeeder = null, partialReply = "";
         chatRequest(q, function(delta){
-          /* streamed reply: show it as it grows, and hand each completed
+          /* streamed reply: hand each completed
              sentence to the voice model the moment it exists \u2014 the
              speech session is created lazily on the first delta so the
              THINKING state is never pre-empted */
           partialReply += delta;
-          showReply(partialReply);
           if (!speechSession){
             var act = activeTts();
             if (act){ speechSession = startSpeechSession(act.fetcher, act.label, act.desc); speechFeeder = createSentenceFeeder(speechSession); }
           }
           if (speechFeeder) speechFeeder.feed(delta);
         }).then(function(text){
-          aiBusy = false; $("chatSend").disabled = false;
-          showReply(text);
+          aiBusy = false;
           if (speechFeeder) speechFeeder.end(); // flush the tail and close: playback drains in order
           else speakReply(text); // no voice model configured \u2014 speakReply reports exactly that, as before
         }).catch(function(err){
@@ -2488,12 +2476,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
           else setState("idle", true);
         });
       }
-      function askAI(){
-        var q = $("chatInput").value.trim();
-        if (!q) return;
-        $("chatInput").value = "";
-        submitQuestion(q);
-      }
+
       /* ---- voice input: LOCAL Whisper speech-to-text -> the same chat -> spoken reply ----
          Web Speech recognition (webkitSpeechRecognition) is dead inside
          Electron: it depends on Google's proprietary speech service, which
@@ -2505,15 +2488,15 @@ Your highest priority is to make every interaction feel intelligent, personal to
          language auto-detected). The model downloads once (~80 MB) with
          progress in the status line, is cached by the app, and afterwards
          speech-to-text works fully offline on this device.
-         Flow: MIC ON -> listening. The analyser level (micRMS) detects an
+         Flow: conversation on -> listening. The analyser level (micRMS) detects an
          utterance: speech starts a MediaRecorder recording, ~1.2s of
          silence (or 30s max) ends it, the audio is transcribed locally,
-         the transcript goes through the same submitQuestion() as typed
+         the transcript goes through submitQuestion()
          chat, and the reply is spoken with TTS; then listening resumes.
          In a real Chrome/Safari browser only, Web Speech remains as a
          fallback if the local model cannot load. Every failure (model
          download blocked, no recorder, empty transcript) surfaces as
-         visible status/reply text — never silence. */
+         visible status text — never silence. */
       var voiceWanted = false, voiceBusy = false, voiceGen = 0;
       var micRMS = 0; // live mic level, kept current by the analyser tick
       var IS_ELECTRON = /Electron/i.test(navigator.userAgent || "");
@@ -2679,11 +2662,11 @@ Your highest priority is to make every interaction feel intelligent, personal to
           if (ev && (ev.error === "not-allowed" || ev.error === "service-not-allowed")){
             voiceWanted = false; recogGen++;
             flashStatus("STATUS: VOICE BLOCKED \u2014 ALLOW MICROPHONE ACCESS", 9000);
-            showReply("\u26a0 Voice input was blocked. Allow microphone access, then tap MIC again.");
+            showReply("\u26a0 Voice input was blocked. Allow microphone access, then tap the core and try again.");
           } else if (ev && ev.error === "audio-capture"){
             voiceWanted = false; recogGen++;
             flashStatus("STATUS: VOICE BLOCKED \u2014 NO MICROPHONE FOUND", 9000);
-            showReply("\u26a0 No microphone could be captured. Check the microphone, then tap MIC again.");
+            showReply("\u26a0 No microphone could be captured. Check the microphone, then try again.");
           }
           /* recoverable errors (no-speech, network, aborted\u2026) are
              followed by onend, which restarts with a fresh instance */
@@ -2713,7 +2696,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
         startRecogFresh();
       }
 
-      /* ---------- shared voice control (called by the mic button / exit) ---------- */
+      /* ---------- shared voice control (voice starters / exit) ---------- */
       function restartRecog(){
         if (!voiceWanted || voiceBusy) return;
         if (sttMode === "webspeech" && !recogRunning) startRecogFresh();
@@ -2752,7 +2735,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
             startWebSpeech();
           } else {
             flashStatus("STATUS: SPEECH MODEL FAILED TO LOAD — CHECK CONNECTION, THEN TOGGLE MIC TO RETRY", 10000);
-            showReply("⚠ The on-device speech model could not be downloaded (" + (err && err.message ? err.message : "network error") + "). It downloads once (~80 MB) and is then cached on this device. Check your connection, then toggle MIC off and on to retry.");
+            showReply("⚠ The on-device speech model could not be downloaded (" + (err && err.message ? err.message : "network error") + "). It downloads once (~80 MB) and is then cached on this device. Check your connection, then stop and restart the conversation to retry.");
           }
         });
       }
@@ -2837,37 +2820,16 @@ Your highest priority is to make every interaction feel intelligent, personal to
         setGateMicUI();
       }
       function startGateVoice(){
-        if (gateVoiceOn && !voiceWanted && !S.entered){ gateVoiceOn = false; setGateMicUI(); } // session was stopped inside (EXIT / MIC) — resync
+        if (gateVoiceOn && !voiceWanted && !S.entered){ gateVoiceOn = false; setGateMicUI(); } // session was stopped inside (EXIT) — resync
         try { ensureAudio(); } catch(e){}
         if (gateVoiceOn){ stopGateVoice(); return; }
         if (S.entered) return;
         gateVoiceOn = true; setGateMicUI();
         if (!IS_ELECTRON && hasWebSpeech()){ startVoice(); return; }
-        /* Electron / no system recognizer: open the mic exactly like the
-           MIC button does (stream + analyser feeding micRMS), then let the
-           shared Whisper path (VAD + local model) take it from there */
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ gateVoiceOn = false; setGateMicUI(); return; }
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
-          if (!gateVoiceOn){ stream.getTracks().forEach(function(tr){ tr.stop(); }); return; }
-          micStream = stream;
-          var Ctor = window.AudioContext || window.webkitAudioContext;
-          micCtx = new Ctor();
-          var srcNode = micCtx.createMediaStreamSource(stream);
-          var an = micCtx.createAnalyser(); an.fftSize = 512;
-          srcNode.connect(an);
-          var data = new Uint8Array(an.fftSize);
-          (function tick(){
-            an.getByteTimeDomainData(data);
-            var sum = 0;
-            for (var i = 0; i < data.length; i++){ var v = (data[i] - 128) / 128; sum += v * v; }
-            micRMS = Math.min(1, Math.sqrt(sum / data.length) * 6);
-            if (!ttsDrive) S.energy += (micRMS - S.energy) * 0.35;
-            micRAF = requestAnimationFrame(tick);
-          })();
-          S.micOn = true;
-          $("micBtn").textContent = "🎙 MIC ON"; $("micBtn").classList.add("micOn");
-          startVoice();
-        }).catch(function(){ gateVoiceOn = false; setGateMicUI(); });
+        /* Electron / no system recognizer: open the mic stream (analyser
+           feeding micRMS), then let the shared Whisper path (VAD + local
+           model) take it from there */
+        openMicStream().then(function(ok){ if (ok && gateVoiceOn) startVoice(); });
       }
       document.querySelectorAll(".gateMicBtn").forEach(function(b){ b.addEventListener("click", startGateVoice); });
 
@@ -2902,8 +2864,6 @@ Your highest priority is to make every interaction feel intelligent, personal to
       window.__apexHudTalkStop = hudTalkStop;
       window.__apexHudTalkOn = function(){ return hudTalk; };
       loadAiConfig();
-      $("chatSend").addEventListener("click", askAI);
-      $("chatInput").addEventListener("keydown", function(e){ if (e.key === "Enter") askAI(); });
 
       /* ============================== transport ============================== */
       function startBirth(){
@@ -2965,14 +2925,20 @@ Your highest priority is to make every interaction feel intelligent, personal to
         else if (window.__apexPendingState){ // e.g. the APEX-UI status circle asks for listening
           S.state = window.__apexPendingState; trans.to = S.state; window.__apexPendingState = null;
         }
-        document.querySelectorAll(".stateBtn").forEach(function(b){
-          b.classList.toggle("active", b.getAttribute("data-state") === S.state);
-        });
         ringsEl.style.display = S.state === "listening" ? "block" : "none";
+        var speakRingsEl2 = $("speakRings"); if (speakRingsEl2) speakRingsEl2.classList.toggle("show", S.state === "speaking");
         if (params.get("skip")) { S.assembling = false; S.assemblyDone = true; revealBackdrop(); statusEl.textContent = "STATUS: " + S.state.toUpperCase(); }
         else startBirth();
-        if (AICFG) $("chatBar").classList.add("show");
         maybeReveal();
+        /* hands-free: entering the humanoid starts the continuous voice
+           conversation (listen -> spoken reply -> listen again) with no
+           dependence on any scene button; a conversation already running
+           in the HUD simply continues in here */
+        if (!voiceWanted && !voiceBusy){
+          gateVoiceOn = true; setGateMicUI();
+          if (!IS_ELECTRON && hasWebSpeech()) startVoice();
+          else openMicStream().then(function(ok){ if (ok && S.entered) startVoice(); });
+        }
         /* reveal watchdog: whatever the load chain did, an entered stage
            must not sit black — if the plates are in but the reveal never
            fired, fire it; if a plate arrived late, build and reveal then */
@@ -2994,22 +2960,20 @@ Your highest priority is to make every interaction feel intelligent, personal to
       $("exitBtn").addEventListener("click", function(){
         S.entered = false; S.assembling = false;
         S.revealed = false; S.assemblyDone = false; canvas.style.opacity = "0"; bgImg.style.opacity = "0";
+        gateVoiceOn = false; setGateMicUI();
         stopMic(); stopCamera();
+        stopTtsAudio();
         closeAiPanel();
-        $("chatBar").classList.remove("show"); $("aiReply").classList.remove("show");
         S.panelOpen = false; panel.style.display = "none"; setGestureLabel();
+        var speakRingsEl3 = $("speakRings"); if (speakRingsEl3) speakRingsEl3.classList.remove("show");
         stage.style.display = "none"; gate.style.display = "none";
         var uwBack = $("uiWorld"); if (uwBack) uwBack.style.display = "block";
         if (window.__apexShowWorld) window.__apexShowWorld();
       });
-      document.querySelectorAll(".stateBtn").forEach(function(b){
-        b.addEventListener("click", function(){ setState(b.getAttribute("data-state")); });
-      });
-      $("replayBtn").addEventListener("click", function(){ ensureAudio(); startBirth(); });
-      $("soundBtn").addEventListener("click", function(){ ensureAudio(); setSound(!S.soundOn); });
-
-      window.addEventListener("apex-gesture-quiet", function(){ setState("idle"); });
-      window.addEventListener("apex-gesture-snap", function(){ setState("thinking"); });
+      /* No bottom bar, no replay/sound buttons: the humanoid scene keeps
+         only AI SETTINGS, EXIT and the hand-gesture button as controls.
+         Sound and the birth remain internal (startBirth / setSound are
+         still used by the entry flow itself). */
 
       if (params.get("auto")) enter();
     })();
@@ -3449,6 +3413,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
       var HUD_STATE_LABEL = { idle: "STANDBY", listening: "LISTENING", thinking: "THINKING", speaking: "SPEAKING" };
       window.__apexHudState = function(st){
         if (sbState) sbState.textContent = HUD_STATE_LABEL[st] || "STANDBY";
+        uiWorld.classList.toggle("hud-speaking", st === "speaking");
       };
       function toggleHudTalk(){
         if (leaving) return;
