@@ -63,6 +63,8 @@
 
       /* ---------- AI settings side panel ---------- */
       #aiBtn { right: 18px; left: auto; }
+      #aiBtnHud { right: 18px; left: auto; z-index: 30; }
+      #aiBtnHud.aiOn { background: rgba(34,211,238,.2); }
       #aiBtn.aiOn { background: rgba(34,211,238,.2); }
       #aiPanel { position: fixed; top: 0; right: 0; height: 100dvh; width: 320px; max-width: 92vw; z-index: 260; background: rgba(2,12,16,.97); border-left: 1px solid rgba(34,211,238,.35); box-shadow: -18px 0 44px rgba(0,0,0,.55); padding: 18px 16px 20px; color: var(--pale); font-size: 12px; line-height: 1.55; letter-spacing: .05em; transform: translateX(105%); transition: transform 280ms ease; overflow-y: auto; display: none; }
       #aiPanel.open { display: block; transform: translateX(0); }
@@ -317,6 +319,8 @@
       <a id="ghLink" href="https://github.com/RubenM1990/APEX-UI" target="_blank" rel="noopener noreferrer">View on GitHub ↗</a>
 
       <div id="agentCard" role="dialog" aria-modal="true" hidden></div>
+
+      <button id="aiBtnHud" class="topBtn" type="button" aria-label="Open AI settings">AI SETTINGS</button>
     </div>
 
     <!-- ================= GATE (kept for the ?auto path; the APEX-UI core now leads here) ================= -->
@@ -357,6 +361,13 @@
       </div>
 
 
+
+
+
+
+
+
+    </section>
 
       <aside id="aiPanel" aria-label="AI settings">
         <div class="apTitle">AI SETTINGS</div>
@@ -617,11 +628,6 @@ Your highest priority is to make every interaction feel intelligent, personal to
         <button id="ttsTest" type="button">🔊 TEST VOICE</button>
         <div id="diagText">voice check: —</div>
       </aside>
-
-
-
-
-    </section>
 
     <script>
     (function(){
@@ -1979,6 +1985,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
         aiState.textContent = "AI: " + cfg.model + " — active";
         aiState.classList.add("on");
         var btn = $("aiBtn"); btn.textContent = "AI • " + cfg.model; btn.classList.add("aiOn");
+        var btnH = $("aiBtnHud"); if (btnH) { btnH.textContent = "AI • " + cfg.model; btnH.classList.add("aiOn"); }
       }
       function loadAiConfig(){
         var cfg = null;
@@ -1991,6 +1998,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
       function openAiPanel(){ updateVoicesDiag(); aiPanel.style.display = "block"; requestAnimationFrame(function(){ aiPanel.classList.add("open"); }); }
       function closeAiPanel(){ aiPanel.classList.remove("open"); setTimeout(function(){ if (!aiPanel.classList.contains("open")) aiPanel.style.display = "none"; }, 300); }
       $("aiBtn").addEventListener("click", function(){ aiPanel.classList.contains("open") ? closeAiPanel() : openAiPanel(); });
+      var aiBtnHud = $("aiBtnHud"); if (aiBtnHud) aiBtnHud.addEventListener("click", function(){ aiPanel.classList.contains("open") ? closeAiPanel() : openAiPanel(); });
       $("aiClose").addEventListener("click", closeAiPanel);
       $("ttsTest").addEventListener("click", function(){
         updateVoicesDiag();
