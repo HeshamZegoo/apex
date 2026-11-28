@@ -737,7 +737,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
         <label for="aiSoundBtn">SOUND</label>
         <button id="aiSoundBtn" class="ctlBtn" type="button" aria-pressed="true">&#9834; SOUND ON</button>
         <div class="apTitle" style="margin-top:18px">VOICE</div>
-        <div class="apSub">Spoken replies come from a voice model you choose below — pick a provider, add its key, press DONE. The chat model above stays the brain.</div>
+        <div class="apSub">Spoken replies come from a voice model you choose below — pick a provider, add its key, press DONE. The chat model above stays the brain. APEX also LISTENS through this provider — his microphone audio is transcribed by its AI speech-to-text (Fish ASR · ElevenLabs Scribe · Gemini · Custom transcriptions). There is no local model.</div>
         <label for="aiVoiceEngine">VOICE MODEL</label>
         <select id="aiVoiceEngine">
           <option value="">Choose voice model</option>
@@ -1919,7 +1919,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
       /* ================= mic stream (owned by the voice conversation) =================
          There is no mic button any more: this stream exists solely to feed
          the voice conversation — the analyser level drives micRMS (the
-         Whisper VAD) and the talking energy while the user speaks. It is
+         utterance VAD) and the talking energy while the user speaks. It is
          opened by the entry / HUD voice starters and by humanoid entry,
          and closed on EXIT. The SPEAKING face is driven by actual TTS
          playback (ttsDrive), never by this stream. */
@@ -2493,6 +2493,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
       }
       function stopTtsAudio(){
         ttsGen++;
+        ttsDrive = false; // a stopped session never reaches endSpeak(); without this the VAD stays blocked forever (vadTick refuses while ttsDrive)
         if (ttsEl){ try { ttsEl.pause(); } catch(e){} ttsEl.onended = null; ttsEl.onerror = null; try { ttsEl.removeAttribute("src"); } catch(e){} }
         ttsAudio = null;
         if (ttsObjUrl){ try { URL.revokeObjectURL(ttsObjUrl); } catch(e){} ttsObjUrl = null; }
@@ -2666,81 +2667,111 @@ Your highest priority is to make every interaction feel intelligent, personal to
         });
       }
 
-      /* ---- voice input: LOCAL Whisper speech-to-text -> the same chat -> spoken reply ----
-         Web Speech recognition (webkitSpeechRecognition) is dead inside
-         Electron: it depends on Google's proprietary speech service, which
-         third-party Chromium builds cannot use, so it never produced a
-         transcript — the mic meter reacted, but nothing was ever sent or
-         answered. Listening now runs on a local Whisper model through
-         Transformers.js (pinned @xenova/transformers 2.17.2, model
-         Xenova/whisper-base, quantized, MULTILINGUAL — Arabic + English,
-         language auto-detected). The model downloads once (~80 MB) with
-         progress in the status line, is cached by the app, and afterwards
-         speech-to-text works fully offline on this device.
-         Flow: conversation on -> listening. The analyser level (micRMS) detects an
-         utterance: speech starts a MediaRecorder recording, ~1.2s of
-         silence (or 30s max) ends it, the audio is transcribed locally,
-         the transcript goes through submitQuestion()
-         chat, and the reply is spoken with TTS; then listening resumes.
-         In a real Chrome/Safari browser only, Web Speech remains as a
-         fallback if the local model cannot load. Every failure (model
-         download blocked, no recorder, empty transcript) surfaces as
-         visible status text — never silence. */
+      /* ---- voice input: AI speech-to-text -> the same chat -> spoken reply ----
+         Apex has NO local model and never uses Web Speech recognition
+         (webkitSpeechRecognition is dead inside Electron: it depends on
+         Google's proprietary speech service, which third-party Chromium
+         builds cannot use — the mic meter reacted, but nothing was ever
+         sent or answered). Listening runs on the AI provider already
+         configured for his voice in AI SETTINGS:
+           Fish Audio  -> POST {fishBase}/v1/asr
+           ElevenLabs  -> POST {elBase}/v1/speech-to-text (Scribe)
+           Gemini      -> POST {gemBase}/v1beta/models/{model}:generateContent (audio input)
+           Custom      -> POST {ttsBase}/audio/transcriptions (OpenAI-compatible)
+         Flow: conversation on -> listening. The analyser level (micRMS)
+         detects an utterance: speech starts a MediaRecorder recording,
+         ~0.9s of silence (or 30s max) ends it, the audio is converted to
+         16kHz WAV and transcribed by the provider, the transcript goes
+         through submitQuestion() chat, and the reply is spoken with TTS;
+         then listening resumes. With no voice model configured he can
+         neither hear nor speak: the VOICE MODEL NOT SET chip shows, and
+         not one STT request is made. Every failure (no recorder, empty
+         transcript, provider error) surfaces as visible status text —
+         never silence, and transcription errors never dead-end the
+         session: the next utterance retries. */
       var voiceWanted = false, voiceBusy = false, voiceGen = 0;
       var micRMS = 0; // live mic level, kept current by the analyser tick
-      var IS_ELECTRON = /Electron/i.test(navigator.userAgent || "");
 
-      /* ---------- local Whisper engine (Transformers.js) ---------- */
-      var STT_CDN = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/+esm";
-      var STT_MODEL = "Xenova/whisper-base";
-      var sttPipe = null, sttLoading = null, sttFailed = false;
-      function loadStt(){
-        if (sttPipe) return Promise.resolve(sttPipe);
-        if (sttLoading) return sttLoading;
-        sttFailed = false;
-        flashStatus("STATUS: LOADING SPEECH MODEL FIRST TIME… 0%", 20000);
-        sttLoading = import(STT_CDN).then(function(T){
-          T.env.allowLocalModels = false;
-          T.env.useBrowserCache = true;
-          try { T.env.backends.onnx.wasm.numThreads = 1; } catch(e){}
-          return T.pipeline("automatic-speech-recognition", STT_MODEL, {
-            quantized: true,
-            progress_callback: function(p){
-              if (p && p.status === "progress"){
-                flashStatus("STATUS: LOADING SPEECH MODEL FIRST TIME… " + Math.round(p.progress || 0) + "%", 20000);
-              }
-            }
-          });
-        }).then(function(pipe){
-          sttPipe = pipe; sttLoading = null;
-          return pipe;
-        }).catch(function(err){
-          sttLoading = null; sttFailed = true;
-          throw err;
-        });
-        return sttLoading;
+      /* ---------- AI speech-to-text engine (the configured voice provider) ---------- */
+      function sttCfg(){
+        if (!AICFG) return null;
+        var eng = AICFG.voiceEngine;
+        if (eng === "fish" && AICFG.fishKey) return { engine: "fish", name: "Fish Audio" };
+        if (eng === "elevenlabs" && AICFG.elKey) return { engine: "eleven", name: "ElevenLabs Scribe" };
+        if (eng === "gemini" && AICFG.gemKey) return { engine: "gemini", name: "Gemini" };
+        if (eng === "custom" && AICFG.ttsBase) return { engine: "custom", name: "Custom STT" };
+        return null;
       }
-      function blobTo16k(blob){
-        return blob.arrayBuffer().then(function(buf){
+      function wavEncode(samples, sr){
+        var buf = new ArrayBuffer(44 + samples.length * 2), v = new DataView(buf);
+        function ws(off, str){ for (var k = 0; k < str.length; k++) v.setUint8(off + k, str.charCodeAt(k)); }
+        ws(0, "RIFF"); v.setUint32(4, 36 + samples.length * 2, true); ws(8, "WAVE"); ws(12, "fmt ");
+        v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+        v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+        ws(36, "data"); v.setUint32(40, samples.length * 2, true);
+        for (var i = 0; i < samples.length; i++){ var x = Math.max(-1, Math.min(1, samples[i])); v.setInt16(44 + i * 2, x < 0 ? x * 0x8000 : x * 0x7FFF, true); }
+        return new Blob([buf], { type: "audio/wav" });
+      }
+      function blobToWav16k(blob){
+        return blob.arrayBuffer().then(function(ab){
           var Ctor = window.AudioContext || window.webkitAudioContext;
           var ctx = new Ctor();
-          function fail(e){ try { ctx.close(); } catch(_){} throw e; }
-          return ctx.decodeAudioData(buf).then(function(decoded){
+          return ctx.decodeAudioData(ab).then(function(decoded){
             try { ctx.close(); } catch(e){}
             var len = Math.max(1, Math.ceil(decoded.duration * 16000));
             var off = new OfflineAudioContext(1, len, 16000);
-            var src = off.createBufferSource(); src.buffer = decoded;
-            src.connect(off.destination); src.start();
-            return off.startRendering().then(function(rendered){ return rendered.getChannelData(0); });
-          }, fail);
+            var src = off.createBufferSource(); src.buffer = decoded; src.connect(off.destination); src.start();
+            return off.startRendering().then(function(r){ return wavEncode(r.getChannelData(0), 16000); });
+          });
         });
+      }
+      function sttFetch(url, opts, name){
+        return fetch(url, opts).then(function(resp){
+          if (!resp.ok) throw new Error(name + " STT HTTP " + resp.status);
+          return resp.json();
+        }).catch(function(err){
+          if (err && /STT HTTP /.test(err.message || "")) throw err;
+          throw new Error(name + " STT unreachable — no response");
+        });
+      }
+      function transcribeStt(wavBlob){
+        var sc = sttCfg(); if (!sc) return Promise.reject(new Error("not-configured"));
+        if (sc.engine === "fish"){
+          var fd = new FormData(); fd.append("audio", wavBlob, "audio.wav");
+          return sttFetch(cfgBase(AICFG.fishBase, FISH_BASE_DEFAULT) + "/v1/asr",
+            { method: "POST", headers: { "Authorization": "Bearer " + AICFG.fishKey }, body: fd }, "Fish Audio")
+            .then(function(j){ return (j && j.text) || ""; });
+        }
+        if (sc.engine === "eleven"){
+          var fd2 = new FormData(); fd2.append("file", wavBlob, "audio.wav"); fd2.append("model_id", "scribe_v1");
+          return sttFetch(cfgBase(AICFG.elBase, EL_BASE_DEFAULT) + "/v1/speech-to-text",
+            { method: "POST", headers: { "xi-api-key": AICFG.elKey }, body: fd2 }, "ElevenLabs")
+            .then(function(j){ return (j && j.text) || ""; });
+        }
+        if (sc.engine === "gemini"){
+          return wavBlob.arrayBuffer().then(function(ab){
+            var bytes = new Uint8Array(ab), bin = "";
+            for (var i = 0; i < bytes.length; i += 8192){ bin += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(bytes.length, i + 8192))); }
+            var url = cfgBase(AICFG.gemBase, GEM_BASE_DEFAULT) + "/v1beta/models/" + encodeURIComponent("gemini-2.5-flash") + ":generateContent";
+            return sttFetch(url, { method: "POST", headers: { "x-goog-api-key": AICFG.gemKey, "Content-Type": "application/json" },
+              body: JSON.stringify({ contents: [ { parts: [ { text: "Transcribe the spoken audio exactly, in its original language. Output only the transcription, nothing else." }, { inlineData: { mimeType: "audio/wav", data: btoa(bin) } } ] } ] }) }, "Gemini")
+              .then(function(j){
+                var part = j && j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts && j.candidates[0].content.parts[0];
+                return (part && part.text) || "";
+              });
+          });
+        }
+        var fdc = new FormData(); fdc.append("file", wavBlob, "audio.wav"); fdc.append("model", "whisper-1");
+        var hc = {}; if (AICFG.ttsKey) hc["Authorization"] = "Bearer " + AICFG.ttsKey;
+        return sttFetch(String(AICFG.ttsBase).replace(/\/+$/, "") + "/audio/transcriptions",
+          { method: "POST", headers: hc, body: fdc }, "Custom STT")
+          .then(function(j){ return (j && j.text) || ""; });
       }
 
       /* ---------- utterance recorder + silence detection (VAD) ---------- */
-      var sttMode = "none"; // "whisper" | "webspeech"
       var rec = null, recOn = false, recStopping = false, recDiscardNext = false;
       var recStartT = 0, lastLoud = 0, vadTimer = 0;
-      var VAD_LEVEL = 0.09, VAD_SILENCE_MS = 1200, VAD_MAX_MS = 30000, VAD_POLL_MS = 120;
+      var VAD_LEVEL = 0.09, VAD_SILENCE_MS = 900, VAD_MAX_MS = 30000, VAD_POLL_MS = 120;
       function recStart(){
         if (recOn || recStopping || !micStream || typeof MediaRecorder === "undefined") return;
         var chunks = [];
@@ -2758,7 +2789,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
         try { rec.stop(); } catch(e){ recStopping = false; rec = null; }
       }
       function vadTick(){
-        if (!voiceWanted) return; // NOT sttFailed: a failed model load must not latch the VAD dead behind a live LISTENING state — each utterance's transcription retries loadStt() and surfaces its own error
+        if (!voiceWanted) return; // a failed transcription must not latch the VAD dead behind a live LISTENING state — each utterance retries the provider and surfaces its own error
         if (voiceBusy || aiBusy || ttsDrive || !S.micOn){ recStop(true); return; }
         var now = performance.now();
         if (!recOn){ if (micRMS > VAD_LEVEL) recStart(); return; }
@@ -2774,21 +2805,18 @@ Your highest priority is to make every interaction feel intelligent, personal to
         setState("thinking", true);
         flashStatus("STATUS: TRANSCRIBING…", 30000);
         var blob = new Blob(chunks, { type: chunks[0].type || "audio/webm" });
-        blobTo16k(blob).then(function(audio){
-          if (!audio || !audio.length) throw new Error("empty recording");
-          return loadStt().then(function(pipe){
-            return pipe(audio, { chunk_length_s: 30, stride_length_s: 5, task: "transcribe", language: "arabic" });
-          });
+        blobToWav16k(blob).then(function(wav){
+          return transcribeStt(wav);
         }).then(function(out){
           if (gen !== voiceGen){ voiceBusy = false; return; } // mic turned off meanwhile — drop it
-          var text = (out && out.text ? String(out.text) : "").trim();
-          var cleaned = text.replace(/\[[^\]]*\]|\([^)]*\)/g, "").trim();
+          var text = (out ? String(out) : "").trim();
+          var cleaned = text;
           if (!cleaned){
             voiceBusy = false;
             if (voiceWanted){ setState("listening", true); flashStatus("STATUS: LISTENING — DIDN'T CATCH THAT, TRY AGAIN", 6000); }
             return;
           }
-          DIAG.heard = text; DIAG.engine = "local Whisper model"; renderDiag();
+          DIAG.heard = text; var scNow = sttCfg(); DIAG.engine = "AI speech-to-text (" + (scNow ? scNow.name : "provider") + ")"; renderDiag();
           flashStatus("STATUS: YOU SAID — " + text, 7000);
           if (handleVoiceCommand(text)){ /* voice command: executed locally, never sent to the chat — the ack's endSpeak owns voiceBusy */ }
           else if (!S.entered && !hudTalk){ voiceBusy = false; /* entry screen: only commands act — plain chatter is ignored (a running HUD conversation is the exception) */ }
@@ -2796,146 +2824,43 @@ Your highest priority is to make every interaction feel intelligent, personal to
         }).catch(function(err){
           if (gen !== voiceGen){ voiceBusy = false; return; }
           voiceBusy = false;
+          if (err && err.message === "not-configured"){ voiceNotSet(); return; }
           if (voiceWanted){ setState("listening", true); flashStatus("STATUS: LISTENING — SPEECH ERROR, TRY AGAIN", 6000); }
           showReply("⚠ Speech transcription failed: " + (err && err.message ? err.message : err));
         });
-      }
-
-      /* ---------- Web Speech fallback (real browsers only, never Electron) ---------- */
-      var recog = null, recogRunning = false, recogGen = 0;
-      function hasWebSpeech(){ return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
-      /* Every (re)start builds a FRESH recognizer instance. The old code
-         kept one instance alive forever and merely called start() on it
-         again after each end: a wedged instance (a known Chromium
-         failure after repeated silence timeouts / error ends) then died
-         silently \u2014 start() no-oped or threw into an empty catch \u2014 while
-         the UI still showed LISTENING, so the user looked "heard" (the
-         mic animation reacted) but transcripts went nowhere and no reply
-         ever came. Now a recoverable end restarts with a fresh instance
-         after a short beat, with NO restart cap while the conversation
-         still wants to listen; only fatal errors (permission refused, no
-         capture device) stop listening, and they surface on the status
-         line. */
-      function buildRecog(){
-        var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!Rec) return null;
-        var r = new Rec();
-        DIAG.engine = "system recognizer (ar-EG)"; renderDiag();
-        r.continuous = true;
-        r.interimResults = true;
-        r.lang = "ar-EG"; // Hesham speaks Egyptian Arabic \u2014 never follow the phone UI language
-        r.onresult = function(ev){
-          var finalText = "", interim = "";
-          for (var i = ev.resultIndex; i < ev.results.length; i++){
-            var res = ev.results[i];
-            if (res.isFinal) finalText += res[0].transcript;
-            else interim += res[0].transcript;
-          }
-          if (interim) flashStatus("STATUS: LISTENING \u2014 " + interim.trim(), 1500);
-          finalText = finalText.trim();
-          if (finalText){
-            DIAG.heard = finalText; renderDiag();
-            voiceBusy = true;
-            try { r.stop(); } catch(e){}
-            if (handleVoiceCommand(finalText)){ /* voice command: executed locally, never sent to the chat \u2014 the ack's endSpeak restarts listening */ }
-            else if (!S.entered && !hudTalk){ voiceBusy = false; /* entry screen: only commands act \u2014 plain chatter is ignored (a running HUD conversation is the exception) */ }
-            else { statusEl.textContent = "STATUS: THINKING"; submitQuestion(finalText); }
-          }
-        };
-        r.onend = function(){
-          if (recog === r) recogRunning = false;
-          scheduleRecogRestart();
-        };
-        r.onerror = function(ev){
-          if (recog === r) recogRunning = false;
-          if (ev && (ev.error === "not-allowed" || ev.error === "service-not-allowed")){
-            voiceWanted = false; recogGen++;
-            flashStatus("STATUS: VOICE BLOCKED \u2014 ALLOW MICROPHONE ACCESS", 9000);
-            showReply("\u26a0 Voice input was blocked. Allow microphone access, then tap the core and try again.");
-          } else if (ev && ev.error === "audio-capture"){
-            voiceWanted = false; recogGen++;
-            flashStatus("STATUS: VOICE BLOCKED \u2014 NO MICROPHONE FOUND", 9000);
-            showReply("\u26a0 No microphone could be captured. Check the microphone, then try again.");
-          }
-          /* recoverable errors (no-speech, network, aborted\u2026) are
-             followed by onend, which restarts with a fresh instance */
-        };
-        r.onstart = function(){ if (recog === r) recogRunning = true; };
-        return r;
-      }
-      function scheduleRecogRestart(){
-        if (!voiceWanted || voiceBusy) return;
-        var gen = recogGen;
-        setTimeout(function(){
-          if (gen !== recogGen || !voiceWanted || voiceBusy) return;
-          if (sttMode !== "webspeech" || recogRunning) return;
-          startRecogFresh();
-        }, 250);
-      }
-      function startRecogFresh(){
-        if (!voiceWanted || voiceBusy || recogRunning) return;
-        var r = buildRecog();
-        if (!r) return;
-        recog = r;
-        recogRunning = true; // optimistic: blocks double-starts until onstart/onend settle it
-        try { r.start(); } catch(e){ recogRunning = false; scheduleRecogRestart(); }
-      }
-      function startWebSpeech(){
-        if (!hasWebSpeech()) return;
-        startRecogFresh();
       }
 
       /* ---------- shared voice control (voice starters / exit) ---------- */
       function restartRecog(){
         if (!micEnabled()) return;
         if (!voiceWanted || voiceBusy) return;
-        if (sttMode === "webspeech" && !recogRunning) startRecogFresh();
-        /* whisper mode: the VAD poll runs whenever the mic is on and starts
-           the next utterance by itself \u2014 there is nothing to restart */
+        /* cloud STT mode: the VAD poll runs whenever the mic is on and starts
+           the next utterance by itself — there is nothing to restart */
       }
       function startVoice(){
         if (!micEnabled()){ micOffHint(); return; }
         voiceWanted = true; voiceGen++;
-        if (sttMode === "webspeech"){ startWebSpeech(); return; }
-        // Real browsers (Safari/Chrome): the system speech recognizer understands
-        // Arabic far better than the tiny local Whisper model, so use it first there.
-        // Whisper stays the engine inside Electron, where Web Speech is dead.
-        if (!IS_ELECTRON && hasWebSpeech()){
-          sttMode = "webspeech";
-          statusEl.textContent = "STATUS: LISTENING";
-          startWebSpeech();
+        var sc = sttCfg();
+        if (!sc){
+          /* no voice model configured: Apex can neither hear nor speak —
+             the persistent VOICE MODEL NOT SET chip says so, and not one
+             STT request is made in this state */
+          voiceNotSet();
           return;
         }
-        sttMode = "whisper";
         if (typeof MediaRecorder === "undefined"){
-          sttFailed = true;
           flashStatus("STATUS: VOICE RECORDING NOT SUPPORTED IN THIS BROWSER", 9000);
           showReply("⚠ This browser cannot record microphone audio for speech recognition.");
           return;
         }
+        DIAG.engine = "AI speech-to-text (" + sc.name + ")"; renderDiag();
         if (!vadTimer) vadTimer = setInterval(vadTick, VAD_POLL_MS);
-        loadStt().then(function(){
-          if (voiceWanted && !voiceBusy) statusEl.textContent = "STATUS: LISTENING";
-        }, function(err){
-          if (!voiceWanted) return;
-          if (!IS_ELECTRON && hasWebSpeech()){
-            sttMode = "webspeech";
-            if (vadTimer){ clearInterval(vadTimer); vadTimer = 0; }
-            recStop(true);
-            statusEl.textContent = "STATUS: LISTENING";
-            startWebSpeech();
-          } else {
-            flashStatus("STATUS: SPEECH MODEL FAILED TO LOAD — CHECK CONNECTION, THEN TOGGLE MIC TO RETRY", 10000);
-            showReply("⚠ The on-device speech model could not be downloaded (" + (err && err.message ? err.message : "network error") + "). It downloads once (~80 MB) and is then cached on this device. Check your connection, then stop and restart the conversation to retry.");
-          }
-        });
+        if (!voiceBusy) statusEl.textContent = "STATUS: LISTENING";
       }
       function stopVoice(){
         voiceWanted = false; voiceBusy = false; voiceGen++;
         if (vadTimer){ clearInterval(vadTimer); vadTimer = 0; }
         recStop(true);
-        recogGen++; // pending fresh-instance restarts must not resurrect it
-        if (recog){ try { recog.stop(); } catch(e){} recog = null; }
       }
 
       /* ================= voice commands (the reel's layer) =================
@@ -2993,16 +2918,17 @@ Your highest priority is to make every interaction feel intelligent, personal to
       }
 
       /* ---------- entry-screen voice: tap the mic, say the word, walk in ----------
-         Reuses the app's own STT paths (startVoice picks the system
-         recognizer in real browsers, the local Whisper pipeline in
-         Electron); on the entry screen only commands act (see the
-         transcript sinks above). After "open", the very same session keeps
-         running inside the humanoid as the normal conversation. */
+         Reuses the app's own cloud STT path: the mic stream opens
+         (analyser feeding micRMS), the VAD cuts utterances, and the
+         configured voice provider transcribes them; on the entry screen
+         only commands act (see the transcript sinks above). After
+         "open", the very same session keeps running inside the humanoid
+         as the normal conversation. */
       var gateVoiceOn = false;
       function setGateMicUI(){ /* v14: the speak-to-enter pills are gone — no-op */ }
       function stopGateVoice(){
         gateVoiceOn = false;
-        if (sttMode === "whisper" && S.micOn) stopMic(); else stopVoice();
+        if (S.micOn) stopMic(); else stopVoice();
         setGateMicUI();
       }
       function startGateVoice(){
@@ -3012,10 +2938,9 @@ Your highest priority is to make every interaction feel intelligent, personal to
         if (gateVoiceOn){ stopGateVoice(); return; }
         if (S.entered) return;
         gateVoiceOn = true; setGateMicUI();
-        if (!IS_ELECTRON && hasWebSpeech()){ startVoice(); return; }
-        /* Electron / no system recognizer: open the mic stream (analyser
-           feeding micRMS), then let the shared Whisper path (VAD + local
-           model) take it from there */
+        /* open the mic stream (analyser feeding micRMS), then let the
+           shared cloud STT path (VAD + provider transcription) take it
+           from there */
         openMicStream().then(function(ok){ if (ok && gateVoiceOn) startVoice(); });
       }
 
@@ -3122,8 +3047,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
            in the HUD simply continues in here */
         if (!voiceWanted && !voiceBusy){
           gateVoiceOn = true; setGateMicUI();
-          if (!IS_ELECTRON && hasWebSpeech()) startVoice();
-          else openMicStream().then(function(ok){ if (ok && S.entered) startVoice(); });
+          openMicStream().then(function(ok){ if (ok && S.entered) startVoice(); });
         }
         /* reveal watchdog: whatever the load chain did, an entered stage
            must not sit black — if the plates are in but the reveal never
