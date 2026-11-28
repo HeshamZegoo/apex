@@ -99,7 +99,7 @@
          golden orb ring with its cyan particle core, the OVERVIEW lamp panel
          (live clock + open-meteo weather) and the bottom status bar. Tapping
          the central core leaves this world and enters the humanoid. */
-      #uiWorld { position: fixed; inset: 0; z-index: 150; overflow: hidden; background: #04080f; color: #f0ede8; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; user-select: none; transition: opacity .45s ease; }
+      #uiWorld { position: fixed; inset: 0; z-index: 150; overflow: hidden; background: #030304; color: #f0ede8; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; user-select: none; }
       #uiWorld.uw-leaving { opacity: 0; }
       #uiWorld .uw-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 95% 88% at 50% 42%, #122c43 0%, #0c1d30 38%, #07111f 72%, #050b14 100%); }
       #uwShader { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .12; z-index: 0; }
@@ -193,8 +193,115 @@
         .ov-time { font-size: 28px; }
         #orbStatus { bottom: 10px; }
       }
-      .gateMicBtn.gateMicOn { background: rgba(245,166,35,.30) !important; color: #fff2d8 !important; border-color: #ffd080 !important; }
-      #gate .gateMicBtn.gateMicOn { background: rgba(34,211,238,.20) !important; color: #ecfeff !important; border-color: rgba(34,211,238,.8) !important; }
+
+      /* ===== v14: MIRA-style coloured HUD (ported from the artifact) ===== */
+      #uiWorld .mw-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 70% at 50% 46%, #0c0c0e 0%, #060607 55%, #030304 100%); }
+      #miraShader { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .11; z-index: 0; display: none; }
+      #miraField { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+      #uiWorld .mw-lightcast { position: absolute; inset: 0; z-index: 2; pointer-events: none; mix-blend-mode: screen; background: radial-gradient(circle at 50% 46%, rgba(255,196,94,.11) 0%, rgba(245,166,35,.05) 34%, rgba(3,3,4,0) 64%); transition: opacity .6s ease; }
+      #miraFxWrap { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+      #miraGl { position: absolute; left: 50%; top: 50%; width: 1600px; height: 1600px; transform: translate(-50%, -50%); }
+      #miraOrbBox { position: absolute; left: 50%; top: 50%; width: min(560px, 58vw); height: min(500px, 56vw, 70vh); transform: translate(-50%, -50%); z-index: 3; pointer-events: none; transition: transform .5s ease; }
+      #miraOrbStage { position: absolute; left: 50%; top: 50%; width: 900px; height: 900px; }
+      #miraRingSvg { position: absolute; left: 0; top: 190px; width: 900px; height: 520px; overflow: visible; }
+      #miraTap { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(340px, 36vw); height: min(340px, 36vw); min-width: 150px; min-height: 150px; border-radius: 50%; z-index: 5; cursor: pointer; background: none; border: none; padding: 0; }
+      #miraTap:focus-visible { outline: 2px solid rgba(255,181,77,.8); outline-offset: 4px; }
+      @keyframes mwDotBlink { 0%, 100% { opacity: .2 } 50% { opacity: 1 } }
+      .mw-dot-blink { animation: mwDotBlink 1.2s ease-in-out infinite; }
+      .mw-blink-0 { animation-delay: 0s; }
+      .mw-blink-1 { animation-delay: .4s; }
+      .mw-blink-2 { animation-delay: .8s; }
+      @keyframes mwSoundWave { 0% { r: 155px; opacity: .18; stroke-width: .8px; } 60% { opacity: .06; } 100% { r: 230px; opacity: 0; stroke-width: .3px; } }
+      @keyframes mwSoundWaveActive { 0% { r: 155px; opacity: .55; stroke-width: 1.5px; } 60% { opacity: .2; } 100% { r: 245px; opacity: 0; stroke-width: .5px; } }
+      .mw-sound-wave { animation: mwSoundWave 3.5s ease-out infinite; }
+      .mw-wave-0 { animation-delay: 0s; }
+      .mw-wave-1 { animation-delay: .9s; }
+      .mw-wave-2 { animation-delay: 1.8s; }
+      .mw-wave-3 { animation-delay: 2.7s; }
+      .mira-ring-wrap[data-state="speaking"] .mw-sound-wave, .mira-ring-wrap[data-state="thinking"] .mw-sound-wave { animation-name: mwSoundWaveActive; animation-duration: 2s; }
+      @keyframes mwRingBreathe { 0%, 100% { opacity: .9 } 50% { opacity: 1 } }
+      .mw-ring-breathe, .mw-ring-glow, .mw-ring-bright { animation: mwRingBreathe 3s ease-in-out infinite; }
+      .mw-ring-bright { animation-duration: 2s; }
+      @keyframes mwCenterPulse { 0%, 100% { opacity: .7 } 50% { opacity: 1 } }
+      .mw-center-ring { animation: mwCenterPulse 2.5s ease-in-out infinite; }
+      @keyframes mwRotCW { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      @keyframes mwRotCCW { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+      .mw-orbit-cw { animation: mwRotCW 5s linear infinite; }
+      .mw-orbit-ccw { animation: mwRotCCW 3s linear infinite; }
+      .mw-think-orbit { animation: mwRotCW 9s linear infinite; }
+      .mira-ring-wrap[data-state="thinking"] .mw-orbit-cw { animation-duration: 2.6s; }
+      .mira-ring-wrap[data-state="thinking"] .mw-orbit-ccw { animation-duration: 1.8s; }
+      @keyframes mwCenterBlink { 0%, 100% { opacity: .9 } 50% { opacity: 1 } }
+      .mw-center { animation: mwCenterBlink 2s ease-in-out infinite; }
+      @keyframes mwListeningGrow { 0% { transform: scale(1); } 25% { transform: scale(1.2); } 62% { transform: scale(1.15); } 100% { transform: scale(1.2); } }
+      @keyframes mwListeningPulse { 0%, 100% { transform: scale(1.2); } 50% { transform: scale(1.14); } }
+      .mira-ring-wrap[data-state="listening"] { animation: mwListeningGrow 1s cubic-bezier(.22,1,.36,1) forwards, mwListeningPulse 2.4s ease-in-out 1s infinite; transform-origin: 450px 260px; }
+      .mira-ring-wrap { filter: drop-shadow(0 0 34px rgba(245,166,35,.26)); }
+      #miraStatus { position: absolute; left: 0; right: 0; bottom: 66px; display: flex; justify-content: center; z-index: 18; pointer-events: none; }
+      #miraSbTap { pointer-events: all; cursor: pointer; }
+      #miraSbTap:focus-visible { outline: 2px solid rgba(255,181,77,.8); outline-offset: 2px; }
+      #enterHumBtn { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 19; min-height: 44px; padding: 10px 26px; background: rgba(245,166,35,.14); color: #f7efdd; border: 1px solid rgba(255,181,77,.55); border-radius: 24px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; letter-spacing: .28em; text-indent: .28em; cursor: pointer; box-shadow: 0 0 22px rgba(245,166,35,.22); }
+      #enterHumBtn:hover { background: rgba(245,166,35,.28); }
+      .mira-overview { position: absolute; top: 10px; left: 0; width: 560px; max-width: 94vw; z-index: 30; pointer-events: none; }
+      .mov-cone { position: absolute; top: 14px; left: 8px; width: min(520px, 94vw); height: 240px; pointer-events: none; background: radial-gradient(ellipse 48% 70% at 46% 0%, rgba(255,196,94,.13), rgba(255,196,94,.04) 46%, transparent 72%); filter: blur(10px); transition: all .5s ease; }
+      .mira-overview.mov-open .mov-cone { background: radial-gradient(ellipse 48% 70% at 46% 0%, rgba(255,196,94,.27), rgba(255,196,94,.04) 46%, transparent 72%); }
+      .mov-lamp { position: relative; height: 40px; cursor: pointer; pointer-events: auto; }
+      .mov-fil { position: absolute; top: 14px; left: 8px; width: min(380px, calc(100vw - 184px)); height: 2px; border-radius: 2px; background: #f4f7fa; box-shadow: 0 0 10px #ffb54d, 0 0 26px #f5a623; transition: all .5s ease; }
+      .mira-overview.mov-open .mov-fil { width: min(480px, calc(100vw - 184px)); box-shadow: 0 0 10px #ffb54d, 0 0 26px #f5a623, 0 0 54px #f5a623; }
+      .mov-node { position: absolute; top: 11px; left: 6px; width: 8px; height: 8px; border-radius: 50%; background: #ffffff; box-shadow: 0 0 10px #ffb54d, 0 0 18px #f5a623; transition: left .5s ease; pointer-events: none; }
+      .mira-overview.mov-open .mov-node { left: min(480px, calc(100vw - 184px)); }
+      .mov-label { position: absolute; top: 20px; left: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 9px; letter-spacing: .34em; color: rgba(226,232,238,.55); transition: color .4s; }
+      .mira-overview.mov-open .mov-label { color: rgba(226,232,238,.9); }
+      .mov-clockwrap { padding-left: 14px; padding-top: 6px; width: fit-content; max-width: calc(100vw - 28px); pointer-events: auto; }
+      .mov-clockrow { display: flex; align-items: flex-end; gap: 26px; flex-wrap: wrap; }
+      .mov-time { font-size: 34px; font-weight: 300; letter-spacing: .04em; color: #f0ede8; line-height: 1; text-shadow: 0 0 22px rgba(255,181,77,.18); }
+      .mov-date { font-size: 10.5px; letter-spacing: .2em; color: rgba(240,237,232,.5); margin-top: 4px; text-transform: uppercase; }
+      .mov-temp { font-size: 22px; font-weight: 300; color: rgba(255,181,77,.95); line-height: 1; }
+      .mov-wxsub { font-size: 9.5px; letter-spacing: .12em; color: rgba(240,237,232,.45); margin-top: 2px; text-transform: uppercase; }
+      .mov-subrow { display: flex; align-items: flex-start; gap: 26px; flex-wrap: wrap; margin-top: 14px; }
+      .mov-greet { min-width: 112px; font-size: 11px; letter-spacing: .12em; color: rgba(240,237,232,.5); padding-top: 2px; text-transform: uppercase; }
+      .mov-otd { max-width: 380px; min-width: 180px; flex: 1 1 220px; }
+      .mov-otd .mov-otdh { font-size: 9px; letter-spacing: .2em; color: #ffb54d; margin-bottom: 3px; }
+      .mov-otd .mov-otdt { font-size: 11.5px; line-height: 1.4; color: rgba(240,237,232,.62); }
+      .mov-tiles { margin-top: 16px; width: 250px; display: flex; flex-direction: column; gap: 8px; }
+      .mov-tiles[hidden] { display: none; }
+      .mov-tile { display: flex; align-items: center; gap: 11px; padding: 11px 14px; min-height: 44px; background: rgba(12,12,14,.72); border: 1px solid rgba(219,228,236,.16); border-radius: 10px; color: rgba(240,237,232,.9); text-decoration: none; font-size: 11.5px; letter-spacing: .05em; line-height: 1.2; backdrop-filter: blur(8px); transition: all .2s; }
+      .mov-tile:hover { border-color: rgba(255,181,77,.45); }
+      .mov-tile .mov-ic { display: flex; color: #ffb54d; flex: none; }
+      .mov-tile .mov-arr { color: rgba(255,181,77,.55); flex: none; margin-left: auto; display: flex; }
+      .mw-pills { position: absolute; top: 16px; right: clamp(16px, 3vw, 40px); z-index: 40; display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+      .mw-pill { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .66rem; letter-spacing: .24em; text-transform: uppercase; color: rgba(240,237,232,.75); text-decoration: none; text-align: center; border: 1px solid rgba(219,228,236,.3); border-radius: 20px; padding: 9px 15px; min-height: 36px; background: rgba(12,12,14,.55); backdrop-filter: blur(6px); cursor: pointer; }
+      .mw-pill:hover { color: #fff; border-color: rgba(255,181,77,.6); }
+      button.mw-pill { width: 100%; }
+      #miraDial { position: fixed; top: 0; right: 0; height: 100dvh; width: 300px; max-width: 92vw; z-index: 250; background: rgba(10,10,12,.97); border-left: 1px solid rgba(255,181,77,.3); box-shadow: -18px 0 44px rgba(0,0,0,.55); padding: 18px 16px 20px; color: #eef1f4; font-size: 12px; line-height: 1.55; letter-spacing: .05em; transform: translateX(105%); transition: transform 280ms ease; overflow-y: auto; display: none; font-family: var(--font-ui); }
+      #miraDial.open { display: block; transform: translateX(0); }
+      #miraDial .mdTitle { color: #ffb54d; letter-spacing: .2em; font-size: 13px; margin-bottom: 4px; }
+      #miraDial .mdSub { color: #8b93a0; font-size: 10px; margin-bottom: 12px; }
+      #miraDial .mdGroup { color: #ffb54d; font-size: 10px; letter-spacing: .16em; margin: 14px 0 4px; }
+      #miraDial label { display: flex; justify-content: space-between; color: #ccd4dc; font-size: 10.5px; letter-spacing: .06em; margin: 8px 0 3px; }
+      #miraDial label output { color: #ffffff; }
+      #miraDial input[type="range"] { width: 100%; min-height: 32px; accent-color: #f5a623; padding: 0; }
+      #miraDial .mdStates { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+      #miraDial .mdStates button { flex: 1 1 40%; min-height: 40px; padding: 8px 6px; background: rgba(245,166,35,.12); color: #f7efdd; border: 1px solid rgba(255,181,77,.35); border-radius: 7px; font-size: 10.5px; letter-spacing: .1em; cursor: pointer; font-family: var(--font-ui); }
+      #miraDial .mdStates button.active { background: rgba(245,166,35,.38); border-color: rgba(255,181,77,.7); }
+      #miraDialClose { margin-top: 18px; width: 100%; padding: 12px; min-height: 48px; background: rgba(245,166,35,.2); color: #f7efdd; border: 1px solid rgba(255,181,77,.5); border-radius: 8px; font-size: 12px; letter-spacing: .2em; cursor: pointer; font-family: var(--font-ui); }
+      @media (max-width: 1000px) {
+      .mira-overview { width: 100%; }
+      }
+      @media (max-width: 700px) {
+      .mw-hint { display: none; }
+      #miraOrbBox { width: 92vw; height: min(92vw, 58vh); }
+      #miraTap { width: 58vw; height: 58vw; }
+      .mov-time { font-size: 28px; }
+      #miraStatus { bottom: 144px; }
+      #enterHumBtn { bottom: 98px; }
+      .mov-otd { display: none; }
+      .mov-greet { display: none; }
+      }
+      #camVideo { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+      #aiPanel .ctlBtn { width: 100%; margin: 4px 0 10px; padding: 11px; min-height: 44px; background: rgba(34,211,238,.08); color: #dff6fd; border: 1px solid rgba(34,211,238,.35); border-radius: 8px; font-size: 12px; letter-spacing: .12em; cursor: pointer; font-family: var(--font-ui); }
+      #aiPanel .ctlBtn:hover { background: rgba(34,211,238,.18); }
+      #aiGestureMsg { color: var(--dim); font-size: 10px; margin: -4px 0 10px; min-height: 12px; }
     </style>
   </head>
   <body>
@@ -202,134 +309,178 @@
          Tap the golden core in the centre to talk with Apex right here.
          The small circle at the bottom (or "open your humanoid") enters the humanoid. -->
     <div id="uiWorld">
-      <div class="uw-bg" aria-hidden="true"></div>
-      <canvas id="uwShader" aria-hidden="true"></canvas>
-      <div class="uw-lightcast" aria-hidden="true"></div>
+      <div class="mw-bg" aria-hidden="true"></div>
+      <canvas id="miraShader" aria-hidden="true"></canvas>
+      <canvas id="miraField" aria-hidden="true"></canvas>
+      <div class="mw-lightcast" id="miraCast" aria-hidden="true"></div>
 
-      <div class="uw-webwrap">
-        <svg id="rwSvg" viewBox="0 0 680 480" preserveAspectRatio="xMidYMid meet" role="group" aria-label="Apex reasoning web — agent nodes are buttons"></svg>
-      </div>
+      <div id="miraFxWrap" aria-hidden="true"><canvas id="miraGl" width="1600" height="1600"></canvas></div>
 
-      <div id="orbBox" aria-hidden="true">
-        <div id="orbStage">
-          <svg id="orbSvg" viewBox="0 0 900 520" fill="none" aria-hidden="true">
-            <defs>
-              <radialGradient id="uwRingFill" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="#f5a623" stop-opacity="0"/>
-                <stop offset="70%" stop-color="#f5a623" stop-opacity="0.04"/>
-                <stop offset="88%" stop-color="#f5a623" stop-opacity="0.18"/>
-                <stop offset="100%" stop-color="#ffd080" stop-opacity="0.5"/>
-              </radialGradient>
-              <radialGradient id="uwAmbBg" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="#f5a623" stop-opacity="0.08"/>
-                <stop offset="100%" stop-color="#f5a623" stop-opacity="0"/>
-              </radialGradient>
-              <filter id="uwRingBlur" x="-40%" y="-40%" width="180%" height="180%">
-                <feGaussianBlur stdDeviation="7" result="b"/>
-                <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
-            </defs>
-            <ellipse cx="450" cy="260" rx="285" ry="245" fill="url(#uwAmbBg)" class="uw-ambient" style="transform-origin:450px 260px"/>
-            <circle cx="450" cy="260" r="178" stroke="#f5a623" stroke-width="0.8" stroke-opacity="0.15" fill="none"/>
-            <circle cx="450" cy="260" r="194" stroke="#f5a623" stroke-width="0.4" stroke-opacity="0.13" fill="none" stroke-dasharray="3 7"/>
-            <circle cx="450" cy="260" r="212" stroke="#f5a623" stroke-width="0.4" stroke-opacity="0.11" fill="none"/>
-            <circle cx="450" cy="260" r="230" stroke="#f5a623" stroke-width="0.4" stroke-opacity="0.09" fill="none" stroke-dasharray="3 7"/>
-            <circle cx="450" cy="260" r="250" stroke="#f5a623" stroke-width="0.4" stroke-opacity="0.07" fill="none"/>
-            <line x1="450" y1="0" x2="450" y2="20" stroke="#f5a623" stroke-width="1" opacity="0.3"/>
-            <line x1="450" y1="500" x2="450" y2="520" stroke="#f5a623" stroke-width="1" opacity="0.3"/>
-            <circle cx="450" cy="260" r="155" stroke="#f5a623" fill="none" class="uw-sound-wave uw-wave-0"/>
-            <circle cx="450" cy="260" r="155" stroke="#f5a623" fill="none" class="uw-sound-wave uw-wave-1"/>
-            <circle cx="450" cy="260" r="155" stroke="#f5a623" fill="none" class="uw-sound-wave uw-wave-2"/>
-            <circle cx="450" cy="260" r="155" stroke="#f5a623" fill="none" class="uw-sound-wave uw-wave-3"/>
-            <circle cx="450" cy="260" r="155" fill="url(#uwRingFill)" class="uw-ring-breathe"/>
-            <circle cx="450" cy="260" r="155" stroke="#f5a623" stroke-width="18" stroke-opacity="0.08" fill="none" filter="url(#uwRingBlur)" class="uw-ring-glow"/>
-            <circle cx="450" cy="260" r="155" stroke="#f5a623" stroke-width="6" stroke-opacity="0.4" fill="none" filter="url(#uwRingBlur)"/>
-            <circle cx="450" cy="260" r="155" stroke="#ffd080" stroke-width="2.5" stroke-opacity="0.95" fill="none" class="uw-ring-bright"/>
-            <circle cx="450" cy="260" r="89.9" stroke="#f5a623" stroke-width="1.5" stroke-opacity="0.15" fill="none" stroke-dasharray="55 25" class="uw-orbit-cw" style="transform-origin:450px 260px"/>
-            <circle cx="450" cy="260" r="54.25" stroke="#f5a623" stroke-width="1" stroke-opacity="0.1" fill="none" stroke-dasharray="28 18" class="uw-orbit-ccw" style="transform-origin:450px 260px"/>
-          </svg>
-          <canvas id="coreCanvas" width="900" height="900"></canvas>
+      <div id="miraOrbBox" aria-hidden="true">
+        <div id="miraOrbStage">
+          <div class="mira-ring-wrap" id="miraRingWrap" data-state="idle" style="position:absolute;left:0;top:190px;width:900px;height:520px">
+            <svg id="miraRingSvg" viewBox="0 0 900 520" fill="none" aria-hidden="true" style="position:absolute;left:0;top:0">
+              <defs>
+                <linearGradient id="miraOrbLine" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#ffc45e"/>
+                  <stop offset="25%" stop-color="#fff3c4"/>
+                  <stop offset="55%" stop-color="#ffbd4e"/>
+                  <stop offset="82%" stop-color="#ffe5a0"/>
+                  <stop offset="100%" stop-color="#f5a623"/>
+                </linearGradient>
+                <radialGradient id="miraRingFill" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#9aa3ab" stop-opacity="0"/>
+                  <stop offset="70%" stop-color="#9aa3ab" stop-opacity="0.04"/>
+                  <stop offset="88%" stop-color="#d7dde3" stop-opacity="0.09"/>
+                  <stop offset="100%" stop-color="#ffffff" stop-opacity="0.2"/>
+                </radialGradient>
+                <filter id="miraRingBlur" x="-40%" y="-40%" width="180%" height="180%">
+                  <feGaussianBlur stdDeviation="7" result="b"/>
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <filter id="miraLineHalo" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="4"/>
+                </filter>
+              </defs>
+              <g id="miraOuterRings"></g>
+              <circle cx="450" cy="260" r="155" stroke="#f5a623" fill="none" class="mw-sound-wave mw-wave-0"/>
+              <circle cx="450" cy="260" r="155" stroke="#f5a623" fill="none" class="mw-sound-wave mw-wave-1"/>
+              <circle cx="450" cy="260" r="155" stroke="#f5a623" fill="none" class="mw-sound-wave mw-wave-2"/>
+              <circle cx="450" cy="260" r="155" stroke="#f5a623" fill="none" class="mw-sound-wave mw-wave-3"/>
+              <circle cx="450" cy="260" r="177" stroke="#f5a623" stroke-width="1" stroke-opacity="0.45" stroke-dasharray="8 14" fill="none" class="mw-think-orbit" id="miraThinkRing" style="transform-origin:450px 260px" opacity="0"/>
+              <circle cx="450" cy="260" r="155" fill="url(#miraRingFill)" class="mw-ring-breathe"/>
+              <circle cx="450" cy="260" r="155" stroke="#f5a623" stroke-width="3.75" stroke-opacity="0.6" fill="none" filter="url(#miraLineHalo)" class="mw-ring-glow"/>
+              <circle cx="450" cy="260" r="155" stroke="url(#miraOrbLine)" stroke-width="2.5" stroke-opacity="0.98" fill="none" class="mw-ring-bright"/>
+              <circle cx="450" cy="260" r="89.9" stroke="#f5a623" stroke-width="1.5" stroke-opacity="0.15" fill="none" stroke-dasharray="55 25" class="mw-orbit-cw" id="miraOrbit1" style="transform-origin:450px 260px"/>
+              <circle cx="450" cy="260" r="54.25" stroke="#f5a623" stroke-width="1" stroke-opacity="0.1" fill="none" stroke-dasharray="28 18" class="mw-orbit-ccw" id="miraOrbit2" style="transform-origin:450px 260px"/>
+              <line x1="450" y1="0" x2="450" y2="20" stroke="#f5a623" stroke-width="1" opacity="0.3"/>
+              <line x1="450" y1="500" x2="450" y2="520" stroke="#f5a623" stroke-width="1" opacity="0.3"/>
+            </svg>
+          </div>
         </div>
       </div>
 
-      <div id="coreTap" role="button" tabindex="0" aria-label="Apex core — tap to talk with Apex"></div>
+      <button id="miraTap" type="button" aria-label="MIRA is on standby. Tap to start a voice conversation with her here."></button>
 
-      <button class="gateMicBtn" type="button" aria-label="Voice entry — say: open your humanoid" style="position:absolute;left:50%;transform:translateX(-50%);bottom:172px;z-index:19;padding:10px 18px;min-height:44px;background:rgba(3,2,0,.55);color:#ffd080;border:1px solid rgba(245,166,35,.55);border-radius:999px;font-family:'Share Tech Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;cursor:pointer;white-space:nowrap;max-width:92vw;">🎙 قول: افتح الهيومانويد · say: open your humanoid</button>
-
-      <div id="orbStatus">
-        <svg width="420" height="130" viewBox="0 0 420 130" fill="none" style="max-width:100vw">
+      <div id="miraStatus">
+        <svg width="420" height="130" viewBox="0 0 420 130" fill="none" style="max-width:100vw" role="img" aria-label="MIRA status">
           <defs>
-            <filter id="uwSbBlur" x="-60%" y="-60%" width="220%" height="220%">
+            <filter id="miraSbBlur" x="-60%" y="-60%" width="220%" height="220%">
               <feGaussianBlur stdDeviation="4" result="b"/>
               <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
             </filter>
           </defs>
-          <line x1="60" y1="48" x2="182" y2="48" stroke="#f5a623" stroke-width="1" opacity="0.18" stroke-dasharray="4 3"/>
-          <line x1="238" y1="48" x2="360" y2="48" stroke="#f5a623" stroke-width="1" opacity="0.18" stroke-dasharray="4 3"/>
-          <g id="sbWave"></g>
-          <circle cx="210" cy="48" r="20" stroke="#f5a623" stroke-width="1.5" stroke-opacity="0.7" fill="#030200" filter="url(#uwSbBlur)" class="uw-center-ring"/>
-          <circle cx="210" cy="48" r="6" fill="#ffd080" opacity="0.95" class="uw-center" style="filter:drop-shadow(0 0 10px #f5a623)"/>
-          <circle id="sbTap" cx="210" cy="48" r="28" fill="#ffffff" fill-opacity="0" style="pointer-events:all;cursor:pointer" tabindex="0" role="button" aria-label="Listen — switch to listening and enter the humanoid"><title>Listen</title></circle>
-          <text id="sbState" x="210" y="92" text-anchor="middle" fill="#f5a623" font-size="13" font-family="'Share Tech Mono', monospace" letter-spacing="0.4em" opacity="0.75">STANDBY</text>
-          <circle cx="198" cy="110" r="2.5" fill="#f5a623" class="uw-dot-blink uw-blink-0"/>
-          <circle cx="210" cy="110" r="2.5" fill="#f5a623" class="uw-dot-blink uw-blink-1"/>
-          <circle cx="222" cy="110" r="2.5" fill="#f5a623" class="uw-dot-blink uw-blink-2"/>
-          <text class="sb-hint" x="210" y="128" text-anchor="middle" fill="#f5a623" font-size="9" font-family="'Share Tech Mono', monospace" letter-spacing="0.14em" opacity="0.32">TAP THE CORE · CLICK AN AGENT · SCROLL FOR THE STORY</text>
+          <line x1="60" y1="48" x2="182" y2="48" stroke="#cfd8e0" stroke-width="1" opacity="0.18" stroke-dasharray="4 3"/>
+          <line x1="238" y1="48" x2="360" y2="48" stroke="#cfd8e0" stroke-width="1" opacity="0.18" stroke-dasharray="4 3"/>
+          <g id="miraWave"></g>
+          <circle cx="210" cy="48" r="20" stroke="#e8eef4" stroke-width="1.5" stroke-opacity="0.7" fill="#0a0a0c" filter="url(#miraSbBlur)" class="mw-center-ring"/>
+          <circle cx="210" cy="48" r="6" fill="#ffffff" opacity="0.95" class="mw-center" style="filter:drop-shadow(0 0 10px #ffb54d)"/>
+          <circle id="miraSbTap" cx="210" cy="48" r="28" fill="#ffffff" fill-opacity="0" tabindex="0" role="button" aria-label="Start or stop the voice conversation"><title>Talk — start or stop the conversation</title></circle>
+          <text id="miraSbState" x="210" y="92" text-anchor="middle" fill="#e8eef4" font-size="13" font-family="'Share Tech Mono', monospace" letter-spacing="0.4em" opacity="0.75">STANDBY</text>
+          <circle cx="198" cy="110" r="2.5" fill="#ffb54d" class="mw-dot-blink mw-blink-0"/>
+          <circle cx="210" cy="110" r="2.5" fill="#ffb54d" class="mw-dot-blink mw-blink-1"/>
+          <circle cx="222" cy="110" r="2.5" fill="#ffb54d" class="mw-dot-blink mw-blink-2"/>
+          <text class="mw-hint" x="210" y="128" text-anchor="middle" fill="#cfd8e0" font-size="9" font-family="'Share Tech Mono', monospace" letter-spacing="0.14em" opacity="0.32">TAP THE ORB TO TALK</text>
         </svg>
       </div>
 
-      <div class="apex-overview" id="ovPanel">
-        <div class="ov-cone" aria-hidden="true"></div>
-        <div class="ov-lamp" id="ovLamp" role="button" tabindex="0" aria-label="Toggle overview panel" aria-expanded="false">
-          <div class="ov-fil"></div>
-          <div class="ov-node"></div>
-          <span class="ov-label">OVERVIEW</span>
+      <button id="enterHumBtn" type="button">ENTER HUMANOID →</button>
+
+      <div class="mira-overview" id="movPanel">
+        <div class="mov-cone" aria-hidden="true"></div>
+        <div class="mov-lamp" id="movLamp" role="button" tabindex="0" aria-label="Toggle overview panel" aria-expanded="false">
+          <div class="mov-fil"></div>
+          <div class="mov-node"></div>
+          <span class="mov-label">OVERVIEW</span>
         </div>
-        <div class="ov-clockwrap">
-          <div class="ov-clockrow">
+        <div class="mov-clockwrap">
+          <div class="mov-clockrow">
             <div>
-              <div class="ov-time" id="ovTime">--:--</div>
-              <div class="ov-date" id="ovDate"></div>
+              <div class="mov-time" id="movTime">--:--</div>
+              <div class="mov-date" id="movDate"></div>
             </div>
-            <div id="ovWx" style="display:none">
-              <div class="ov-temp" id="ovTemp"></div>
-              <div class="ov-wxsub" id="ovWxSub"></div>
+            <div id="movWx" style="display:none">
+              <div class="mov-temp" id="movTemp"></div>
+              <div class="mov-wxsub" id="movWxSub"></div>
             </div>
           </div>
-          <div class="ov-tiles" id="ovTiles" hidden>
-            <a class="ov-tile" href="https://www.instagram.com/reznikov_engineering/" target="_blank" rel="noopener noreferrer">
-              <span class="ov-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></span>
+          <div class="mov-subrow">
+            <div class="mov-greet" id="movGreet"></div>
+            <div class="mov-otd" id="movOtd" hidden>
+              <div class="mov-otdh">ON THIS DAY</div>
+              <div class="mov-otdt" id="movOtdText"></div>
+            </div>
+          </div>
+          <div class="mov-tiles" id="movTiles" hidden>
+            <a class="mov-tile" href="https://www.instagram.com/reznikov_engineering/" target="_blank" rel="noopener noreferrer">
+              <span class="mov-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></span>
               <span style="flex:1">Follow us on Instagram</span>
-              <span class="ov-arr"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span>
+              <span class="mov-arr"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span>
             </a>
-            <a class="ov-tile" href="https://www.facebook.com/profile.php?id=61590746065386" target="_blank" rel="noopener noreferrer">
-              <span class="ov-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></span>
+            <a class="mov-tile" href="https://www.facebook.com/profile.php?id=61590746065386" target="_blank" rel="noopener noreferrer">
+              <span class="mov-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></span>
               <span style="flex:1">Follow us on Facebook</span>
-              <span class="ov-arr"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span>
+              <span class="mov-arr"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span>
             </a>
-            <a class="ov-tile" href="https://www.linkedin.com/in/ruben-mouradian-150698173" target="_blank" rel="noopener noreferrer">
-              <span class="ov-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4V8h4"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></span>
+            <a class="mov-tile" href="https://www.linkedin.com/in/ruben-mouradian-150698173" target="_blank" rel="noopener noreferrer">
+              <span class="mov-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4V8h4"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></span>
               <span style="flex:1">Follow us on LinkedIn</span>
-              <span class="ov-arr"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span>
+              <span class="mov-arr"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span>
             </a>
           </div>
         </div>
       </div>
 
-      <a id="ghLink" href="https://github.com/RubenM1990/APEX-UI" target="_blank" rel="noopener noreferrer">View on GitHub ↗</a>
+      <div class="mw-pills">
+        <a class="mw-pill" href="https://github.com/RubenM1990/MIRA-HUD" target="_blank" rel="noopener noreferrer">View on GitHub ↗</a>
+        <button class="mw-pill" id="dialBtn" type="button" aria-label="Open the design dial">Design dial</button>
+        <button class="mw-pill" id="miraAiBtn" type="button" aria-label="Open AI settings">AI settings</button>
+      </div>
 
-      <div id="agentCard" role="dialog" aria-modal="true" hidden></div>
-
-      <button id="aiBtnHud" class="topBtn" type="button" aria-label="Open AI settings">AI SETTINGS</button>
+      <aside id="miraDial" aria-label="Design dial">
+        <div class="mdTitle">DESIGN DIAL</div>
+        <div class="mdSub">Every number of MIRA's look, live. Kept for this session.</div>
+        <div class="mdGroup">HER STATE</div>
+        <div class="mdStates" id="mdStates">
+          <button type="button" data-mstate="idle" class="active">STANDBY</button>
+          <button type="button" data-mstate="listening">LISTENING</button>
+          <button type="button" data-mstate="thinking">PROCESSING</button>
+          <button type="button" data-mstate="speaking">SPEAKING</button>
+        </div>
+        <div class="mdGroup">CENTRE LINES</div>
+        <label>How many lines <output id="o-linesCount">9</output></label>
+        <input type="range" id="d-linesCount" min="2" max="28" step="1" value="9" />
+        <label>Line brightness <output id="o-linesGlow">2.5</output></label>
+        <input type="range" id="d-linesGlow" min="0" max="2.5" step="0.05" value="2.5" />
+        <label>Share of warm gold lines <output id="o-linesGold">0.6</output></label>
+        <input type="range" id="d-linesGold" min="0" max="0.6" step="0.05" value="0.6" />
+        <label>Chaos of the shape <output id="o-linesChaos">0.6</output></label>
+        <input type="range" id="d-linesChaos" min="0" max="1" step="0.05" value="0.6" />
+        <label>Speed of the movement <output id="o-linesSpeed">3</output></label>
+        <input type="range" id="d-linesSpeed" min="0" max="3" step="0.05" value="3" />
+        <div class="mdGroup">SMOKE &amp; FIELD</div>
+        <label>Smoke strength <output id="o-smokeAmount">0.95</output></label>
+        <input type="range" id="d-smokeAmount" min="0" max="2" step="0.05" value="0.95" />
+        <label>Field intensity <output id="o-fieldIntensity">1</output></label>
+        <input type="range" id="d-fieldIntensity" min="0" max="2" step="0.05" value="1" />
+        <div class="mdGroup">STAR DUST</div>
+        <label>Grains per line <output id="o-dustAmount">15</output></label>
+        <input type="range" id="d-dustAmount" min="0" max="40" step="1" value="15" />
+        <div class="mdGroup">RING &amp; CORE</div>
+        <label>Ring diameter <output id="o-ringDiameter">310</output></label>
+        <input type="range" id="d-ringDiameter" min="240" max="380" step="2" value="310" />
+        <label>Core particles <output id="o-coreParticles">1200</output></label>
+        <input type="range" id="d-coreParticles" min="300" max="2400" step="50" value="1200" />
+        <button id="miraDialClose" type="button">DONE</button>
+      </aside>
     </div>
 
-    <!-- ================= GATE (kept for the ?auto path; the APEX-UI core now leads here) ================= -->
+    <!-- ================= GATE (kept for the ?auto path; the MIRA orb now leads here) ================= -->
     <div id="gate" style="display:none">
       <div class="inner">
         <div class="title">APEX HUMANOID</div>
         <div class="sub">a figure of light that assembles itself</div>
         <button id="enterBtn" type="button">ENTER</button>
-        <button class="gateMicBtn" type="button" aria-label="Voice entry — say: open your humanoid" style="display:block;margin:14px auto 0;padding:10px 18px;min-height:44px;background:transparent;color:#a5f3fc;border:1px solid rgba(34,211,238,.4);border-radius:10px;font-size:12px;letter-spacing:.08em;cursor:pointer;">🎙 قول: افتح الهيومانويد · say: open your humanoid</button>
         <div class="note">the click opens the audio - the birth has a sound</div>
       </div>
     </div>
@@ -349,16 +500,8 @@
 
       <button id="exitBtn" class="topBtn" type="button" aria-label="Exit humanoid view">EXIT</button>
       <button id="aiBtn" class="topBtn" type="button" aria-label="Open AI settings">AI SETTINGS</button>
-      <button id="gestureBtn" class="topBtn" type="button" aria-label="Open hand gesture">Open hand gesture</button>
-      <button id="camDot" type="button" aria-label="Camera tracking is on — open controls" title="Finger tracking is on"></button>
 
-      <div id="gesturePanel">
-        <div class="gpTitle">HAND GESTURE</div>
-        <video id="camVideo" playsinline muted></video>
-        <div>Show your hand to the camera:<br/>· point — Apex follows your fingertip<br/>· pinch — send a pulse<br/>· open palm — quiet, back to idle</div>
-        <button id="camToggle" type="button">Open camera now</button>
-        <div id="gestureMsg"></div>
-      </div>
+      <video id="camVideo" playsinline muted aria-hidden="true"></video>
 
 
 
@@ -579,6 +722,16 @@ Help proactively.
 Adapt continuously.
 
 Your highest priority is to make every interaction feel intelligent, personal to the current user, natural, and genuinely useful.</textarea>
+        <div class="apTitle" style="margin-top:18px">CONTROLS</div>
+        <label for="aiMicToggle">MICROPHONE</label>
+        <button id="aiMicToggle" class="ctlBtn" type="button" aria-pressed="true">MIC: ON</button>
+        <label for="aiGestureToggle">HAND GESTURE CAMERA</label>
+        <button id="aiGestureToggle" class="ctlBtn" type="button" aria-pressed="false">HAND GESTURE: OFF</button>
+        <div id="aiGestureMsg"></div>
+        <label for="aiReplayBtn">BIRTH ANIMATION</label>
+        <button id="aiReplayBtn" class="ctlBtn" type="button">&#8635; REPLAY</button>
+        <label for="aiSoundBtn">SOUND</label>
+        <button id="aiSoundBtn" class="ctlBtn" type="button" aria-pressed="true">&#9834; SOUND ON</button>
         <div class="apTitle" style="margin-top:18px">VOICE</div>
         <div class="apSub">Spoken replies come from a voice model you choose below — pick a provider, add its key, press DONE. The chat model above stays the brain.</div>
         <label for="aiVoiceEngine">VOICE MODEL</label>
@@ -1203,6 +1356,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
       }
       function setSound(on){
         S.soundOn = on;
+        var asb = $("aiSoundBtn"); if (asb){ asb.textContent = on ? "\u266a SOUND ON" : "\u266a SOUND OFF"; asb.setAttribute("aria-pressed", on ? "true" : "false"); }
         if (AC && master) master.gain.linearRampToValueAtTime(on ? 0.72 * 0.62 : 0.0001, AC.currentTime + 0.25);
         if (on) ensureAudio();
       }
@@ -1786,6 +1940,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
         S.micOn = true;
       }
       function openMicStream(){
+        if (!micEnabled()) return Promise.resolve(false);
         if (S.micOn) return Promise.resolve(true);
         if (micOpening) return micOpening;
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ flashStatus("STATUS: NO MICROPHONE ACCESS IN THIS BROWSER", 9000); return Promise.resolve(false); }
@@ -1812,23 +1967,17 @@ Your highest priority is to make every interaction feel intelligent, personal to
 
       /* ============================== camera / hand gesture ============================== */
       var camStream = null, handsObj = null, camRAF = 0, lastPalm = 0, lastPinch = 0;
-      var gestureBtn = $("gestureBtn"), panel = $("gesturePanel"), camVideo = $("camVideo"),
-          camToggle = $("camToggle"), gestureMsg = $("gestureMsg"), camDot = $("camDot");
+      var camVideo = $("camVideo");
+      /* v14: the gesture controls live in AI SETTINGS now — gestureMsg is a
+         shim over the panel status line so the engine code is unchanged */
+      var gestureMsg = { get textContent(){ var e = $("aiGestureMsg"); return e ? e.textContent : ""; }, set textContent(v){ var e = $("aiGestureMsg"); if (e) e.textContent = v; } };
 
       function setGestureLabel(){
-        gestureBtn.textContent = S.camOn ? "Close camera" : (S.panelOpen ? "Open camera now" : "Open hand gesture");
-        gestureBtn.setAttribute("aria-label", gestureBtn.textContent);
+        var gb = $("aiGestureToggle");
+        if (gb){ gb.textContent = S.camOn ? "HAND GESTURE: ON" : "HAND GESTURE: OFF"; gb.setAttribute("aria-pressed", S.camOn ? "true" : "false"); }
       }
-      gestureBtn.addEventListener("click", function(){
-        if (S.camOn){ stopCamera(); return; }
-        if (!S.panelOpen){
-          S.panelOpen = true; panel.style.display = "block"; setGestureLabel();
-        } else {
-          startCamera();
-        }
-      });
-      camDot.addEventListener("click", function(){ panel.style.display = "block"; });
-      camToggle.addEventListener("click", function(){ S.camOn ? stopCamera() : startCamera(); });
+      var aiGestureToggleEl = $("aiGestureToggle");
+      if (aiGestureToggleEl) aiGestureToggleEl.addEventListener("click", function(){ S.camOn ? stopCamera() : startCamera(); });
 
       function startCamera(){
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
@@ -1838,8 +1987,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }, audio: false }).then(function(stream){
           camStream = stream; camVideo.srcObject = stream; // feed stays hidden — tracking only, no preview shown
           var played = camVideo.play(); if (played && played.catch) played.catch(function(){});
-          S.camOn = true; camDot.style.display = "block";
-          camToggle.textContent = "Close camera"; setGestureLabel();
+          S.camOn = true; setGestureLabel();
           gestureMsg.textContent = "loading finger tracking…";
           initHands();
         }).catch(function(){ gestureMsg.textContent = "camera unavailable — check permission"; });
@@ -1849,8 +1997,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
         handSending = false; handErrs = 0;
         if (camStream) camStream.getTracks().forEach(function(tr){ tr.stop(); });
         camStream = null; S.camOn = false;
-        camVideo.srcObject = null; camDot.style.display = "none";
-        camToggle.textContent = "Open camera now";
+        camVideo.srcObject = null;
         gestureMsg.textContent = "";
         setGestureLabel();
       }
@@ -1950,6 +2097,23 @@ Your highest priority is to make every interaction feel intelligent, personal to
          back with text-to-speech while the face speaks, then listens
          again if the mic is on. */
       var AICFG = null, aiBusy = false;
+      /* v14: MIC toggle (AI SETTINGS -> CONTROLS). Persisted as cfg.micOn,
+         DEFAULT ON when absent. When OFF, no recognizer or mic stream may
+         start anywhere: startVoice / startGateVoice / openMicStream all
+         check micEnabled() first, and turning it OFF stops live voice. */
+      var MIC_ON = true;
+      function micEnabled(){ return MIC_ON; }
+      function syncMicBtn(){ var b = $("aiMicToggle"); if (b){ b.textContent = MIC_ON ? "MIC: ON" : "MIC: OFF"; b.setAttribute("aria-pressed", MIC_ON ? "true" : "false"); } }
+      function micOffHint(){ flashStatus("STATUS: MIC OFF \u2014 TURN ON IN AI SETTINGS", 6000); if (window.__apexHudNote) window.__apexHudNote("MIC OFF \u2014 TURN ON IN AI SETTINGS"); }
+      window.__apexMicEnabled = function(){ return MIC_ON; };
+      window.__apexSetMicOn = function(on){
+        MIC_ON = !!on; syncMicBtn();
+        if (!MIC_ON){
+          if (window.__apexHudTalkOn && window.__apexHudTalkOn()) hudTalkStop();
+          if (gateVoiceOn) stopGateVoice();
+          stopVoice(); stopMic();
+        }
+      };
       var AI_LS_KEY = "apex.aiConfig.v1";
       function saveAiConfig(){
         try { localStorage.setItem(AI_LS_KEY, JSON.stringify(AICFG)); } catch(e){}
@@ -1963,6 +2127,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
         $("aiTemp").value = (cfg.temp == null ? 0.7 : cfg.temp);
         $("aiTempVal").textContent = Number($("aiTemp").value).toFixed(1);
         $("aiSystem").value = cfg.system || "";
+        MIC_ON = cfg.micOn !== false; syncMicBtn();
         $("aiVoiceEngine").value = (cfg.voiceEngine === "fish" || cfg.voiceEngine === "elevenlabs" || cfg.voiceEngine === "gemini" || cfg.voiceEngine === "custom") ? cfg.voiceEngine : "";
         $("fishBase").value = cfg.fishBase || "https://api.fish.audio";
         $("fishKey").value = cfg.fishKey || "";
@@ -1996,6 +2161,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
       var aiPanel = $("aiPanel"), aiMsg = $("aiMsg"), aiState = $("aiState");
       var PROVIDER_BASE = { openai: "https://api.openai.com/v1", openrouter: "https://openrouter.ai/api/v1", groq: "https://api.groq.com/openai/v1", nvidia: "https://integrate.api.nvidia.com/v1", custom: "" };
       function openAiPanel(){ updateVoicesDiag(); aiPanel.style.display = "block"; requestAnimationFrame(function(){ aiPanel.classList.add("open"); }); }
+      window.__apexOpenAiPanel = openAiPanel;
       function closeAiPanel(){ aiPanel.classList.remove("open"); setTimeout(function(){ if (!aiPanel.classList.contains("open")) aiPanel.style.display = "none"; }, 300); }
       $("aiBtn").addEventListener("click", function(){ aiPanel.classList.contains("open") ? closeAiPanel() : openAiPanel(); });
       var aiBtnHud = $("aiBtnHud"); if (aiBtnHud) aiBtnHud.addEventListener("click", function(){ aiPanel.classList.contains("open") ? closeAiPanel() : openAiPanel(); });
@@ -2028,6 +2194,14 @@ Your highest priority is to make every interaction feel intelligent, personal to
         });
       });
 
+      $("aiMicToggle").addEventListener("click", function(){
+        window.__apexSetMicOn(!MIC_ON);
+        if (AICFG){ AICFG.micOn = MIC_ON; saveAiConfig(); }
+        else { try { var c0 = JSON.parse(localStorage.getItem(AI_LS_KEY) || "{}"); c0.micOn = MIC_ON; localStorage.setItem(AI_LS_KEY, JSON.stringify(c0)); } catch(e){} }
+        if (!MIC_ON) micOffHint();
+      });
+      $("aiReplayBtn").addEventListener("click", function(){ ensureAudio(); if (S.entered) startBirth(); else enter(); });
+      $("aiSoundBtn").addEventListener("click", function(){ ensureAudio(); setSound(!S.soundOn); });
       $("aiProvider").addEventListener("change", function(){
         var b = PROVIDER_BASE[this.value];
         if (b) $("aiBase").value = b;
@@ -2040,7 +2214,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
         if (!model){ aiMsg.textContent = "enter the AI model name"; $("aiModel").focus(); return; }
         if (!key){ aiMsg.textContent = "enter your API key"; $("aiKey").focus(); return; }
         if (!base){ aiMsg.textContent = "enter the API base URL"; $("aiBase").focus(); return; }
-        applyAiConfig({ provider: $("aiProvider").value, model: model, key: key, base: base,
+        applyAiConfig({ micOn: MIC_ON, provider: $("aiProvider").value, model: model, key: key, base: base,
                   temp: parseFloat($("aiTemp").value), system: $("aiSystem").value.trim(),
                   voiceEngine: $("aiVoiceEngine").value,
                   fishBase: $("fishBase").value.trim(), fishKey: $("fishKey").value.trim(), fishModel: $("fishModel").value.trim(), fishRef: $("fishRef").value.trim(),
@@ -2706,12 +2880,14 @@ Your highest priority is to make every interaction feel intelligent, personal to
 
       /* ---------- shared voice control (voice starters / exit) ---------- */
       function restartRecog(){
+        if (!micEnabled()) return;
         if (!voiceWanted || voiceBusy) return;
         if (sttMode === "webspeech" && !recogRunning) startRecogFresh();
         /* whisper mode: the VAD poll runs whenever the mic is on and starts
            the next utterance by itself \u2014 there is nothing to restart */
       }
       function startVoice(){
+        if (!micEnabled()){ micOffHint(); return; }
         voiceWanted = true; voiceGen++;
         if (sttMode === "webspeech"){ startWebSpeech(); return; }
         // Real browsers (Safari/Chrome): the system speech recognizer understands
@@ -2816,18 +2992,14 @@ Your highest priority is to make every interaction feel intelligent, personal to
          transcript sinks above). After "open", the very same session keeps
          running inside the humanoid as the normal conversation. */
       var gateVoiceOn = false;
-      function setGateMicUI(){
-        document.querySelectorAll(".gateMicBtn").forEach(function(b){
-          if (gateVoiceOn){ b.textContent = "🎙 بسمعك… قول: افتح الهيومانويد · listening — say it"; b.classList.add("gateMicOn"); }
-          else { b.textContent = "🎙 قول: افتح الهيومانويد · say: open your humanoid"; b.classList.remove("gateMicOn"); }
-        });
-      }
+      function setGateMicUI(){ /* v14: the speak-to-enter pills are gone — no-op */ }
       function stopGateVoice(){
         gateVoiceOn = false;
         if (sttMode === "whisper" && S.micOn) stopMic(); else stopVoice();
         setGateMicUI();
       }
       function startGateVoice(){
+        if (!micEnabled()){ micOffHint(); return; }
         if (gateVoiceOn && !voiceWanted && !S.entered){ gateVoiceOn = false; setGateMicUI(); } // session was stopped inside (EXIT) — resync
         try { ensureAudio(); } catch(e){}
         if (gateVoiceOn){ stopGateVoice(); return; }
@@ -2839,7 +3011,6 @@ Your highest priority is to make every interaction feel intelligent, personal to
            model) take it from there */
         openMicStream().then(function(ok){ if (ok && gateVoiceOn) startVoice(); });
       }
-      document.querySelectorAll(".gateMicBtn").forEach(function(b){ b.addEventListener("click", startGateVoice); });
 
       /* ---------- HUD conversation: tap the APEX-UI core and Apex talks
          with you right there in the first interface, like MIRA's HUD —
@@ -2972,7 +3143,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
         stopMic(); stopCamera();
         stopTtsAudio();
         closeAiPanel();
-        S.panelOpen = false; panel.style.display = "none"; setGestureLabel();
+        setGestureLabel();
         var speakRingsEl3 = $("speakRings"); if (speakRingsEl3) speakRingsEl3.classList.remove("show");
         stage.style.display = "none"; gate.style.display = "none";
         var uwBack = $("uiWorld"); if (uwBack) uwBack.style.display = "block";
@@ -2987,23 +3158,144 @@ Your highest priority is to make every interaction feel intelligent, personal to
     })();
     </script>
 <script>
-    /* ================= APEX-UI world — vanilla port of RubenM1990/APEX-UI (MIT) ================= */
+    /* ================= MIRA-style coloured HUD — ported from the Apex artifact (itself a vanilla port of RubenM1990/MIRA-HUD, MIT) and wired to the desktop bridge =================
+       Layers: silver wave shader → MIRA field shader (folded ridges + smoke)
+       → gold ring (SVG) → particle core + orbiting light lines (one canvas).
+       Tapping the CENTRE orb starts a voice conversation right here in
+       the HUD — it never enters the humanoid: she listens, the shared
+       chat answers, the configured voice model speaks the answer, and
+       then she listens again. A voice — yours through the mic, the
+       configured AI's through the configured voice model, or a simulated
+       level — drives the ring, the lines, the field and the equalizer,
+       exactly as in the original. MIRA and the humanoid share one AI
+       configuration (AI SETTINGS → DONE) and one conversation voice:
+       ask in either world and the answer is spoken aloud. Entry into
+       the humanoid is ONLY from the bottom centre dot (LISTENING), the
+       ENTER HUMANOID pill, or the "open humanoid" voice command; EXIT
+       returns here to standby. */
     (function(){
       "use strict";
-      var GOLD = "#f5a623", GOLD_B = "#ffd080", CYAN = "#00e5ff";
+      var VIO = "#dbe4ec", VIO_A = "#aeb9c4", GOLD = "#f5a623";
       var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      var params2 = new URLSearchParams(window.location.search);
+      var paramsM = new URLSearchParams(window.location.search);
       var uiWorld = document.getElementById("uiWorld");
       var worldActive = true, leaving = false;
-      if (params2.get("auto")) { uiWorld.style.display = "none"; worldActive = false; }
-      function esc(s){ return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+      if (paramsM.get("auto")) { uiWorld.style.display = "none"; worldActive = false; }
 
-      /* ---------- OVERVIEW lamp: live clock + weather (open-meteo, keyless — the original's source) ---------- */
+      /* the AI settings panel belongs to both worlds — lift it out of the
+         humanoid stage so MIRA can open it too (same panel, same DONE) */
+      var aiPanelEl = document.getElementById("aiPanel");
+      if (aiPanelEl && aiPanelEl.parentElement !== document.body) document.body.appendChild(aiPanelEl);
+
+      /* ============================== her state ============================== */
+      var CYCLE = ["idle", "listening", "thinking", "speaking"];
+      var LABEL = { idle: "STANDBY", listening: "LISTENING", thinking: "PROCESSING", speaking: "SPEAKING" };
+      var LABEL_LO = { idle: "standby", listening: "listening", thinking: "processing", speaking: "speaking" };
+      var M = {
+        state: "idle",
+        voice: 0, talk: 0, listen: 0,       // smoothed envelopes (miraStage)
+        energy: 0,                          // current voice level 0..1
+        micLevel: null,                     // live mic level while listening (no SR)
+        voiceOn: true
+      };
+      /* a centre-press voice conversation is running in the HUD: after
+         each spoken answer she listens again, until the centre is
+         pressed to end it, a voice command takes her into the humanoid,
+         or the humanoid's EXIT returns her here to standby */
+      var hudConvo = false;
+      var ringWrap = document.getElementById("miraRingWrap");
+      var sbState = document.getElementById("miraSbState");
+      var miraTap = document.getElementById("miraTap");
+      var thinkRing = document.getElementById("miraThinkRing");
+      var orbit1 = document.getElementById("miraOrbit1"), orbit2 = document.getElementById("miraOrbit2");
+      function setMiraState(st, opts){
+        opts = opts || {};
+        if (CYCLE.indexOf(st) < 0) st = "idle";
+        var prev = M.state;
+        M.state = st;
+        ringWrap.setAttribute("data-state", st);
+        sbState.textContent = LABEL[st];
+        miraTap.setAttribute("aria-label",
+          st === "idle" ? "MIRA is on standby. Tap to start a voice conversation with her here." :
+          st === "listening" ? "MIRA is listening. Tap to end the conversation." :
+          st === "thinking" ? "MIRA is processing." :
+          "MIRA is speaking. Tap to reply and keep the conversation going.");
+        thinkRing.setAttribute("opacity", st === "thinking" ? "1" : "0");
+        var active = st !== "idle";
+        orbit1.setAttribute("stroke-opacity", active ? "0.45" : "0.15");
+        orbit2.setAttribute("stroke-opacity", active ? "0.3" : "0.1");
+        document.querySelectorAll("#mdStates button").forEach(function(b){
+          b.classList.toggle("active", b.getAttribute("data-mstate") === st);
+        });
+        /* v14: the conversation itself is the desktop bridge session
+           (__apexHudTalk*); this HUD only mirrors its state visually.
+           Listening/speaking envelopes are simulated levels, exactly as
+           the artifact HUD animated them around its own engine. */
+        if (st === "listening") startListenFx();
+        if (st === "speaking") startSpeakFx();
+        if (st !== "speaking" && st !== "listening") M.energy = 0;
+      }
+
+      /* a voice-like level: syllables inside phrases with short pauses */
+      function fakeVoice(t, seed){
+        var phrase = Math.max(0, Math.sin(t * 0.9 + seed) * 0.6 + 0.55);
+        var syll = Math.max(0, Math.sin(t * 11.3 + seed * 3) * Math.sin(t * 7.1 + 1.7));
+        var jitter = (Math.sin(t * 37.0 + seed) + 1) * 0.08;
+        return Math.min(1, phrase * (0.25 + syll * 0.9) + jitter * phrase);
+      }
+
+      /* ============================== dial ============================== */
+      var DIAL = { linesCount: 9, linesGlow: 2.5, linesGold: 0.6, linesChaos: 0.6, linesSpeed: 3,
+                   smokeAmount: 0.95, fieldIntensity: 1, dustAmount: 15, ringDiameter: 310, coreParticles: 1200 };
+      Object.keys(DIAL).forEach(function(k){
+        var inp = document.getElementById("d-" + k), out = document.getElementById("o-" + k);
+        if (!inp) return;
+        inp.addEventListener("input", function(){
+          DIAL[k] = parseFloat(inp.value);
+          if (out) out.textContent = inp.value;
+          if (k === "ringDiameter") layoutRing();
+          if (k === "coreParticles") buildParticles();
+        });
+        inp.addEventListener("dblclick", function(){ inp.value = inp.getAttribute("value"); inp.dispatchEvent(new Event("input")); });
+      });
+      var dialEl = document.getElementById("miraDial");
+      function openDial(){ dialEl.style.display = "block"; requestAnimationFrame(function(){ dialEl.classList.add("open"); }); }
+      function closeDial(){ dialEl.classList.remove("open"); setTimeout(function(){ if (!dialEl.classList.contains("open")) dialEl.style.display = "none"; }, 300); }
+      document.getElementById("dialBtn").addEventListener("click", function(){ dialEl.classList.contains("open") ? closeDial() : openDial(); });
+      document.getElementById("miraDialClose").addEventListener("click", closeDial);
+      document.querySelectorAll("#mdStates button").forEach(function(b){
+        b.addEventListener("click", function(){ setMiraState(b.getAttribute("data-mstate")); });
+      });
+
+      /* ring diameter from the dial: scale the whole ring group about its centre */
+      var ringSvg = document.getElementById("miraRingSvg");
+      function layoutRing(){
+        var s = DIAL.ringDiameter / 310;
+        ringSvg.style.transform = "scale(" + s + ")";
+        ringSvg.style.transformOrigin = "450px 260px";
+      }
+      /* outer guide rings, as MiraRing: offsets 23/39/57/75/95 capped at 250 */
+      (function(){
+        var NS = "http://www.w3.org/2000/svg", g = document.getElementById("miraOuterRings");
+        [23, 39, 57, 75, 95].forEach(function(off, i){
+          var c = document.createElementNS(NS, "circle");
+          c.setAttribute("cx", 450); c.setAttribute("cy", 260);
+          c.setAttribute("r", Math.min(250, 155 + off));
+          c.setAttribute("stroke", GOLD); c.setAttribute("stroke-width", i === 0 ? 0.8 : 0.4);
+          c.setAttribute("stroke-opacity", (0.15 - i * 0.02).toFixed(2)); c.setAttribute("fill", "none");
+          if (i % 2) c.setAttribute("stroke-dasharray", "3 7");
+          g.appendChild(c);
+        });
+      })();
+
+      /* ============================== overview: clock, weather, on this day ============================== */
       var WCODE = {0:"Clear",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Fog",51:"Drizzle",53:"Drizzle",55:"Drizzle",61:"Rain",63:"Rain",65:"Heavy rain",71:"Snow",73:"Snow",75:"Snow",80:"Showers",81:"Showers",82:"Showers",95:"Storm",96:"Storm",99:"Storm"};
       function tickClock(){
         var now = new Date();
-        document.getElementById("ovTime").textContent = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-        document.getElementById("ovDate").textContent = now.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+        document.getElementById("movTime").textContent = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+        document.getElementById("movDate").textContent = now.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+        var hr = now.getHours();
+        document.getElementById("movGreet").textContent = hr < 5 ? "Good night" : hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
       }
       tickClock(); setInterval(tickClock, 20000);
       var lastWx = { lat: 30.0444, lon: 31.2357, city: "Cairo" };
@@ -3012,15 +3304,12 @@ Your highest priority is to make every interaction feel intelligent, personal to
           .then(function(r){ return r.json(); })
           .then(function(d){
             if (!d || !d.current) return;
-            document.getElementById("ovTemp").textContent = (d.current.temperature_2m != null ? Math.round(d.current.temperature_2m) + "°C" : "-");
+            document.getElementById("movTemp").textContent = (d.current.temperature_2m != null ? Math.round(d.current.temperature_2m) + "°C" : "-");
             var c = WCODE[d.current.weather_code] || "";
-            document.getElementById("ovWxSub").textContent = (lastWx.city + (c ? " · " + c : "")).toUpperCase();
-            document.getElementById("ovWx").style.display = "block";
+            document.getElementById("movWxSub").textContent = (lastWx.city + (c ? " · " + c : "")).toUpperCase();
+            document.getElementById("movWx").style.display = "block";
           }).catch(function(){});
       }
-      // Use the visitor's real location only when geolocation permission was
-      // ALREADY granted (never prompt); otherwise fall back to Cairo — the
-      // city the live original resolves for this visitor.
       if (navigator.permissions && navigator.permissions.query && navigator.geolocation){
         navigator.permissions.query({ name: "geolocation" }).then(function(p){
           if (p.state === "granted"){
@@ -3035,45 +3324,86 @@ Your highest priority is to make every interaction feel intelligent, personal to
         }).catch(function(){ loadWx(); });
       } else loadWx();
       setInterval(loadWx, 1200000);
-
-      /* lamp toggle — the filament grows and the social tiles appear */
-      var ovPanel = document.getElementById("ovPanel"), ovLamp = document.getElementById("ovLamp"), ovOpen = false;
-      function setOv(o){
-        ovOpen = o;
-        ovPanel.classList.toggle("ov-open", o);
-        ovLamp.setAttribute("aria-expanded", o ? "true" : "false");
-        document.getElementById("ovTiles").hidden = !o;
+      /* On this day — one event from Wikipedia's free public feed, as the original */
+      (function(){
+        var now = new Date(), mm = String(now.getMonth() + 1).padStart(2, "0"), dd = String(now.getDate()).padStart(2, "0");
+        fetch("https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/" + mm + "/" + dd)
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            var evs = d && d.events;
+            if (!evs || !evs.length) return;
+            var ev = evs[Math.floor(Math.random() * Math.min(evs.length, 12))];
+            if (!ev || !ev.text) return;
+            document.getElementById("movOtdText").textContent = ev.year + " - " + ev.text;
+            document.getElementById("movOtd").hidden = false;
+          }).catch(function(){});
+      })();
+      var movPanel = document.getElementById("movPanel"), movLamp = document.getElementById("movLamp"), movOpen = false;
+      function setMov(o){
+        movOpen = o;
+        movPanel.classList.toggle("mov-open", o);
+        movLamp.setAttribute("aria-expanded", o ? "true" : "false");
+        document.getElementById("movTiles").hidden = !o;
       }
-      ovLamp.addEventListener("click", function(){ setOv(!ovOpen); });
-      ovLamp.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); setOv(!ovOpen); } });
+      movLamp.addEventListener("click", function(){ setMov(!movOpen); });
+      movLamp.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); setMov(!movOpen); } });
 
-      /* ---------- orb stage scaling (ApexHeroOrb: min(1.6, w/560, h/540)) ---------- */
-      var orbBox = document.getElementById("orbBox"), orbStage = document.getElementById("orbStage");
+      /* ============================== orb stage scaling ==============================
+         ONE scale for everything: the SVG ring stage, the fx canvas (light
+         lines + particle core) and the tap target are all drawn in the same
+         900-unit space with the ring at r=155, so a single viewport-derived
+         scale keeps them registered on every screen. They used to scale by
+         two different formulas — on phones the lines and core orbited
+         visibly outside the gold ring. The size follows the demo: the ring
+         itself spans only ~32% of the viewport height — in the original
+         the composition is the wide sweeping loops around a modest ring,
+         not a ring that fills the frame. */
+      var orbBox = document.getElementById("miraOrbBox"), orbStage = document.getElementById("miraOrbStage");
+      var miraFit = { ringD: 310, s: 1 };
       function fitOrb(){
-        var s = Math.min(1.6, orbBox.clientWidth / 560, orbBox.clientHeight / 540);
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var ringD = Math.max(180, Math.min(440, vw * 0.36, vh * 0.32));
+        var s = ringD / 310;
+        miraFit.ringD = ringD; miraFit.s = s;
+        orbBox.style.width = (900 * s) + "px"; orbBox.style.height = (900 * s) + "px";
         orbStage.style.transform = "translate(-50%,-50%) scale(" + s + ")";
+        var glc = document.getElementById("miraGl");
+        if (glc) glc.style.transform = "translate(-50%,-50%) scale(" + s + ")";
+        var tap = document.getElementById("miraTap");
+        var td = Math.max(170, 350 * s);
+        tap.style.width = td + "px"; tap.style.height = td + "px";
       }
       window.addEventListener("resize", fitOrb); fitOrb();
 
-      /* ---------- status-bar waveform (idle heights, as the original) ---------- */
+      /* ============================== status-bar waveform ============================== */
+      var waveRects = [];
       (function(){
-        var NS = "http://www.w3.org/2000/svg", g = document.getElementById("sbWave");
+        var NS = "http://www.w3.org/2000/svg", g = document.getElementById("miraWave");
         var barCount = 28, barW = 3, width = 170, gap = (width - barCount * barW) / (barCount - 1), cx = 210, cy = 48;
         for (var i = 0; i < barCount; i++){
-          var h = 3 + Math.abs(Math.sin(i * 0.6)) * 5;
           var r = document.createElementNS(NS, "rect");
-          r.setAttribute("x", cx - width / 2 + i * (barW + gap)); r.setAttribute("y", cy - h / 2);
-          r.setAttribute("width", barW); r.setAttribute("height", h); r.setAttribute("rx", 1.5);
-          r.setAttribute("fill", GOLD); r.setAttribute("opacity", 0.3);
-          g.appendChild(r);
+          r.setAttribute("x", cx - width / 2 + i * (barW + gap)); r.setAttribute("y", cy - 1.5);
+          r.setAttribute("width", barW); r.setAttribute("height", 3); r.setAttribute("rx", 1.5);
+          r.setAttribute("fill", VIO); r.setAttribute("opacity", 0.3);
+          g.appendChild(r); waveRects.push(r);
         }
       })();
+      function drawWave(t){
+        var e = Math.max(M.energy, M.state === "thinking" ? 0.22 + 0.1 * Math.sin(t * 9) : 0);
+        for (var i = 0; i < waveRects.length; i++){
+          var idle = 3 + Math.abs(Math.sin(i * 0.6)) * 5;
+          var live = 4 + Math.abs(Math.sin(i * 0.9 + t * 11) * Math.cos(i * 0.35 - t * 7)) * 34 * e;
+          var h = Math.max(idle, live), r = waveRects[i];
+          r.setAttribute("y", (48 - h / 2).toFixed(1)); r.setAttribute("height", h.toFixed(1));
+          r.setAttribute("opacity", (0.3 + 0.6 * e).toFixed(2));
+        }
+      }
 
-      /* ---------- plasma-wave shader backdrop (opacity .12, as the original) ---------- */
+      /* ============================== wave backdrop shader (silver, opacity .08) ============================== */
       var shaderRunning = false;
       function startShader(){
         if (reduced || shaderRunning) return;
-        var cv = document.getElementById("uwShader");
+        var cv = document.getElementById("miraShader");
         var gl = cv.getContext("webgl", { alpha: false, antialias: false, powerPreference: "high-performance", desynchronized: true });
         if (!gl){ cv.style.display = "none"; return; }
         function sh(type, src){ var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
@@ -3083,7 +3413,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
           "precision mediump float;uniform vec2 r;uniform float t;" +
           "void main(){vec2 uv=(gl_FragCoord.xy*2.-r)/min(r.x,r.y);" +
           "float v=0.;v+=sin(uv.x*1.6+t*.11)*.5;v+=sin(uv.y*1.2-t*.09)*.5;v+=sin((uv.x+uv.y)*1.1+t*.07)*.5;v+=sin(length(uv)*2.2-t*.13)*.5;v/=4.;" +
-          "vec3 deep=vec3(.012,.05,.09);vec3 mid=vec3(.02,.16,.24);vec3 hi=vec3(.05,.35,.45);" +
+          "vec3 deep=vec3(.03,.03,.035);vec3 mid=vec3(.10,.10,.11);vec3 hi=vec3(.30,.28,.25);" +
           "vec3 col=mix(deep,mid,smoothstep(-.6,.6,v));col=mix(col,hi,smoothstep(.55,.95,v)*.6);" +
           "gl_FragColor=vec4(col,1.);}"));
         gl.linkProgram(prog); gl.useProgram(prog);
@@ -3103,363 +3433,895 @@ Your highest priority is to make every interaction feel intelligent, personal to
         })(t0);
       }
 
-      /* ---------- cyan particle core (ApexCore3D "particles": 1200 motes in a bubbling ball) ---------- */
-      var coreRunning = false;
-      var coreCv = document.getElementById("coreCanvas"), coreCtx = coreCv.getContext("2d");
-      var PN = 1200, pDir = new Float32Array(PN * 3), pR = new Float32Array(PN), pPh = new Float32Array(PN), pSp = new Float32Array(PN);
-      for (var pi = 0; pi < PN; pi++){
-        var th = Math.random() * Math.PI * 2, ph2 = Math.acos(2 * Math.random() - 1);
-        pDir[pi * 3] = Math.sin(ph2) * Math.cos(th); pDir[pi * 3 + 1] = Math.sin(ph2) * Math.sin(th); pDir[pi * 3 + 2] = Math.cos(ph2);
-        pR[pi] = 0.16 + Math.pow(Math.random(), 0.6) * 0.84;
-        pPh[pi] = Math.random() * Math.PI * 2; pSp[pi] = 0.7 + Math.random() * 1.7;
-      }
-      function makeSprite(color){
-        var c = document.createElement("canvas"); c.width = c.height = 32;
-        var g = c.getContext("2d"), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16);
-        gr.addColorStop(0, color); gr.addColorStop(0.35, color); gr.addColorStop(1, "rgba(0,0,0,0)");
-        g.fillStyle = gr; g.fillRect(0, 0, 32, 32); return c;
-      }
-      var sprCyan = makeSprite("rgba(25,216,245,0.9)"), sprPale = makeSprite("rgba(210,250,255,0.95)");
-      function drawCoreFrame(t){
-        coreCtx.clearRect(0, 0, 900, 900);
-        var g0 = coreCtx.createRadialGradient(450, 450, 0, 450, 450, 130);
-        g0.addColorStop(0, "rgba(0,229,255,0.16)"); g0.addColorStop(1, "rgba(0,229,255,0)");
-        coreCtx.fillStyle = g0; coreCtx.fillRect(310, 310, 280, 280);
-        coreCtx.globalCompositeOperation = "lighter";
-        var rot = t * 0.12, tilt = 0.42, cr = Math.cos(rot), sr = Math.sin(rot), ct = Math.cos(tilt), st = Math.sin(tilt), R = 76;
-        for (var i = 0; i < PN; i++){
-          var dx = pDir[i * 3], dy = pDir[i * 3 + 1], dz = pDir[i * 3 + 2];
-          var rr = pR[i] * R + Math.sin(t * pSp[i] + pPh[i]) * 2.4;
-          var x = dx * rr, y = dy * rr, z = dz * rr;
-          var x1 = x * cr - z * sr, z1 = x * sr + z * cr;
-          var y2 = y * ct - z1 * st, z2 = y * st + z1 * ct;
-          var depth = (z2 / R + 1) / 2;
-          coreCtx.globalAlpha = 0.16 + 0.8 * depth;
-          var s = 3.4 + 4.6 * depth;
-          coreCtx.drawImage(depth > 0.86 ? sprPale : sprCyan, 450 + x1 - s / 2, 450 + y2 - s / 2, s, s);
+      /* ============================== MIRA field shader — folded ridges + smoke ==============================
+         A trimmed port of MiraField's fragment shader: domain-warped fbm
+         ridges in silver, a bright near-ring band, and smoke that thickens
+         with her voice. */
+      var fieldRunning = false;
+      function startField(){
+        if (reduced || fieldRunning) return;
+        var cv = document.getElementById("miraField");
+        var gl = cv.getContext("webgl", { alpha: false, antialias: false, powerPreference: "high-performance", desynchronized: true });
+        if (!gl){ cv.style.display = "none"; return; }
+        var FS = [
+          "precision highp float;",
+          "uniform vec2 iRes; uniform float iTime; uniform float iField; uniform float iMatter;",
+          "uniform vec2 iCenter; uniform float iRing; uniform float iClear; uniform float iSpread;",
+          "uniform float iState; uniform float iEnergy; uniform float iAlpha; uniform float iNear; uniform float iHotLo;",
+          "float hash(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }",
+          "float noise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);",
+          " float a=hash(i), b=hash(i+vec2(1.,0.)), c=hash(i+vec2(0.,1.)), d=hash(i+vec2(1.,1.));",
+          " return mix(mix(a,b,f.x), mix(c,d,f.x), f.y); }",
+          "float fbm(vec2 p){ float v=0., a=.5; for(int i=0;i<5;i++){ v+=a*noise(p); p=p*2.03+vec2(17.1,9.2); a*=.5; } return v; }",
+          "float fbm3(vec2 p){ float v=0., a=.5; for(int i=0;i<3;i++){ v+=a*noise(p); p=p*2.03+vec2(17.1,9.2); a*=.5; } return v; }",
+          "vec2 domainWarp(vec2 p, float t){ vec2 q=vec2(fbm(p+vec2(0.,t*.045)), fbm(p+vec2(5.2,-t*.037)));",
+          " vec2 r=vec2(fbm(p+3.8*q+vec2(1.7,t*.027)), fbm(p+3.2*q+vec2(8.3,-t*.031))); return p+1.4*r; }",
+          "void main(){",
+          " vec2 uv=gl_FragCoord.xy/iRes; vec2 asp=vec2(iRes.x/iRes.y,1.0);",
+          " float slowT=iTime*.035, medT=iTime*.08, fineT=iTime*.14;",
+          " float thinking=step(1.5,iState)*(1.0-step(2.5,iState)); float speaking=step(2.5,iState);",
+          " float audioBoost=1.0+iEnergy*.20*speaking;",
+          " float nearSlowT=iTime*.02, nearMedT=iTime*.05, hotT=iTime*.11*(1.0+.35*thinking);",
+          " vec2 toOrb=(uv-iCenter)*asp; float distanceToOrb=length(toOrb);",
+          " vec2 dir=toOrb/(distanceToOrb+.0001); vec2 tangent=vec2(-dir.y,dir.x);",
+          " float orbInfluence=1.0-smoothstep(iRing*.9,iRing*3.0,distanceToOrb);",
+          " vec2 p=(uv-.5)*asp*2.0; vec2 warped=domainWarp(p,iTime);",
+          " warped+=tangent*orbInfluence*sin(distanceToOrb*17.0+medT*4.6)*.035;",
+          " float distortion=fbm(warped*1.7+slowT); float irregularDistance=distanceToOrb+distortion*.09;",
+          " float fieldL=fbm(warped*.45+vec2(slowT*.6,-slowT*.4));",
+          " float fieldA=fbm(warped*1.15+vec2(medT*.3,0.)); float fieldB=fbm(warped*2.1+7.4+vec2(0.,fineT*.25));",
+          " float ridgeA=pow(1.0-abs(fieldA*2.0-1.0),6.0); float ridgeB=pow(1.0-abs(fieldB*2.0-1.0),10.0); float ridgeL=pow(1.0-abs(fieldL*2.0-1.0),5.0);",
+          " float membrane=smoothstep(.48,.72,fieldA)*.12; float membraneL=smoothstep(.52,.80,fieldL)*.07;",
+          " float energyRaw=fbm(warped*.65+vec2(slowT*.6*(1.0+.5*thinking),-slowT*.5)); float energy=smoothstep(.58,.78,energyRaw);",
+          " ridgeA*=mix(.4,1.7,energy)*audioBoost; ridgeB*=mix(.6,1.5,energy)*audioBoost;",
+          " float near=(1.0-smoothstep(iRing*1.1,iRing*3.2,irregularDistance))*smoothstep(iRing*.85,iRing*1.15,irregularDistance);",
+          " ridgeB*=1.0+.6*near; ridgeA*=1.0+.3*near;",
+          " float clear=mix(1.0,smoothstep(iRing*.80,iRing*1.05,distanceToOrb),iClear);",
+          " float innerMask=smoothstep(iRing*.90,iRing*1.10,distanceToOrb);",
+          " float outerMask=1.0-smoothstep(iRing*2.0,iRing*2.7,distanceToOrb);",
+          " float nearOrbMask=innerMask*outerMask;",
+          " float nearRidgeA=0., nearRidgeB=0., nearBody=0., hotspot=0., hotGlow=0.;",
+          " if (nearOrbMask>0.002){",
+          "  float breakup=fbm3(warped*1.9+vec2(nearSlowT*1.05,-nearSlowT*.8));",
+          "  nearOrbMask*=smoothstep(.22,.62,breakup);",
+          "  float nearFieldA=fbm(warped*1.4+vec2(nearMedT*.4,nearMedT*.25));",
+          "  float nearFieldB=fbm(warped*2.7+8.7+vec2(-nearMedT*.3,nearMedT*.5));",
+          "  nearRidgeA=pow(1.0-abs(nearFieldA*2.0-1.0),7.0)*nearOrbMask;",
+          "  nearRidgeB=pow(1.0-abs(nearFieldB*2.0-1.0),12.0)*nearOrbMask;",
+          "  nearBody=smoothstep(.50,.78,nearFieldA)*nearOrbMask;",
+          "  float energyField=fbm3(warped*1.5+vec2(hotT*.28,-hotT*.21));",
+          "  float energyHot=smoothstep(iHotLo,iHotLo+.07,energyField);",
+          "  float matterPresence=min(1.0,max(max(nearRidgeA,nearRidgeB),nearBody*.6)*1.6);",
+          "  hotspot=energyHot*matterPresence;",
+          "  hotGlow=energyHot*pow(1.0-abs(nearFieldA*2.0-1.0),2.0)*nearOrbMask; }",
+          " vec3 silverDeep=vec3(.13,.12,.11), silverMain=vec3(.52,.54,.57), silverBright=vec3(.84,.85,.87);",
+          " vec3 warmGold=vec3(1.0,.72,.38), baseSilver=vec3(.44,.45,.48), whiteWarm=vec3(1.0,.97,.92);",
+          " vec3 color=mix(silverDeep,silverMain,fieldA);",
+          " color=mix(color,silverBright,clamp(ridgeA,0.,1.)); color=mix(color,warmGold,clamp(ridgeB*energy,0.,1.));",
+          " float alpha=iAlpha*(membraneL*.5*iField + membrane*.26*iMatter + ridgeL*.07*iField + ridgeA*.30*iMatter + ridgeB*.42*iField);",
+          " float visibility=smoothstep(.32,.70,fbm(warped*.6+12.0+vec2(slowT*.3,-slowT*.2)));",
+          " visibility=mix(visibility,.55+.45*visibility,iSpread);",
+          " alpha*=visibility*clear;",
+          " float quiet=1.0-.18*(1.0-step(.5,iState)); alpha*=quiet;",
+          " vec3 nearCol=mix(baseSilver,silverBright,clamp(nearRidgeA*1.4,0.,1.));",
+          " nearCol=mix(nearCol,warmGold,clamp(nearRidgeB,0.,1.));",
+          " nearCol=mix(nearCol,whiteWarm,clamp(hotspot*1.5,0.,1.));",
+          " float nearAlpha=(nearBody*.30 + nearRidgeA*1.00 + nearRidgeB*.95)*iMatter*quiet*audioBoost*iNear;",
+          " vec3 ground=mix(vec3(.012,.012,.013), vec3(.005,.005,.006), smoothstep(.35,1.25,length((uv-.5)*asp)));",
+          " float atmo=smoothstep(.40,.9,fbm(p*.28+vec2(slowT*.25,slowT*.15)+30.0))*.09*iField;",
+          " vec3 col=ground+silverDeep*atmo;",
+          " float haze=(.35+.65*smoothstep(.25,.85,fieldL))*(.6+.4*visibility);",
+          " col+=mix(silverDeep,silverMain,fieldL*.8)*haze*.30*iSpread*iField*iAlpha;",
+          " col=col+color*clamp(alpha,0.,1.);",
+          " vec3 nearFaint=mix(baseSilver,silverBright,clamp(nearRidgeA*1.4,0.,1.));",
+          " col=mix(col,nearFaint,clamp(nearAlpha*.18,0.,1.));",
+          " gl_FragColor=vec4(col,1.0); }"
+        ].join("\n");
+        function sh(type, src){ var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
+        var prog = gl.createProgram();
+        gl.attachShader(prog, sh(gl.VERTEX_SHADER, "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}"));
+        gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+        gl.linkProgram(prog);
+        if (!gl.getProgramParameter(prog, gl.LINK_STATUS)){ cv.style.display = "none"; return; }
+        gl.useProgram(prog);
+        var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+        var loc = gl.getAttribLocation(prog, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+        var U = {};
+        ["iRes", "iTime", "iField", "iMatter", "iCenter", "iRing", "iClear", "iSpread", "iState", "iEnergy", "iAlpha", "iNear", "iHotLo"].forEach(function(n){ U[n] = gl.getUniformLocation(prog, n); });
+        function size(){
+          /* the field is soft smoke — it renders below full resolution and
+             is upscaled by the browser, which keeps software-GPU devices fluid */
+          var k = 0.7 * Math.min(window.devicePixelRatio || 1, 1.5);
+          cv.width = Math.max(320, Math.floor(window.innerWidth * k)); cv.height = Math.max(180, Math.floor(window.innerHeight * k));
+          gl.viewport(0, 0, cv.width, cv.height);
         }
-        coreCtx.globalAlpha = 1; coreCtx.globalCompositeOperation = "source-over";
-      }
-      function startCore(){
-        if (coreRunning) return;
-        if (reduced){ drawCoreFrame(1.2); return; }
-        coreRunning = true;
-        var t0 = performance.now();
+        size(); window.addEventListener("resize", size);
+        var t0 = performance.now(), fSkip = 0;
+        fieldRunning = true;
         (function frame(now){
-          if (!worldActive){ coreRunning = false; return; }
-          drawCoreFrame((now - t0) / 1000 + 1.2);
+          if (!worldActive){ fieldRunning = false; return; }
+          if ((fSkip++ & 1) === 1){ requestAnimationFrame(frame); return; } // every other frame is plenty for slow smoke
+          var stNum = M.state === "listening" ? 1 : M.state === "thinking" ? 2 : M.state === "speaking" ? 3 : 0;
+          gl.uniform2f(U.iRes, cv.width, cv.height); gl.uniform1f(U.iTime, (now - t0) / 1000);
+          gl.uniform1f(U.iField, 1); gl.uniform1f(U.iMatter, 1);
+          gl.uniform2f(U.iCenter, 0.5, 0.5);
+          gl.uniform1f(U.iRing, (miraFit.ringD * (DIAL.ringDiameter / 310) / 2) / Math.max(1, window.innerHeight));
+          gl.uniform1f(U.iClear, 1); gl.uniform1f(U.iSpread, 0);
+          gl.uniform1f(U.iState, stNum); gl.uniform1f(U.iEnergy, M.voice);
+          gl.uniform1f(U.iAlpha, DIAL.fieldIntensity); gl.uniform1f(U.iNear, 1.45); gl.uniform1f(U.iHotLo, 0.5);
+          gl.drawArrays(gl.TRIANGLES, 0, 3);
           requestAnimationFrame(frame);
         })(t0);
       }
 
-      /* ---------- reasoning web — port of ReasoningWeb.jsx (full mode, coreless, standby) ---------- */
-      var ROSTER_POS = [
-        ['chief_of_staff', 'Chief of staff', 'consultant', 250, 212, true, 18, 9],
-        ['memory', 'Memory', 'consultant', 452, 250, true, -18, 8],
-        ['strategist', 'Strategist', 'consultant', 296, 118, true, -22, 6.5],
-        ['researcher', 'Researcher', 'consultant', 182, 150, true, 24, 6.5],
-        ['finance', 'Finance', 'consultant', 436, 148, true, -20, 6.5],
-        ['editor', 'Editor', 'consultant', 584, 208, true, -26, 6.5],
-        ['sales', 'Sales', 'doer', 158, 266, true, 22, 6.5],
-        ['marketing', 'Marketing', 'doer', 195, 298, true, 22, 6.5],
-        ['ops', 'Ops', 'doer', 232, 330, true, 20, 6.5],
-        ['social_media', 'Social', 'doer', 330, 374, true, -16, 6.5],
-        ['engineering', 'Engineering', 'doer', 426, 350, true, -18, 6.5],
-        ['design', 'Design', 'doer', 502, 312, true, -22, 6.5],
-        ['developer', 'Developer', 'doer', 118, 356, false, 26, 6],
-        ['analytics', 'Analytics', 'tool', 256, 388, false, 20, 5.5],
-        ['crm', 'CRM', 'tool', 414, 392, true, -18, 5.5],
-        ['calendar', 'Calendar', 'tool', 560, 356, true, -24, 5.5],
-        ['email', 'Email', 'tool', 608, 286, false, -26, 5.5],
-        ['drive', 'Drive', 'tool', 582, 132, false, 24, 5.5]
+      /* ============================== orb GL scene — the demo's own renderer, ported ==============================
+         A faithful vanilla-WebGL port of the original's three.js scene
+         (MiraCoreMatter + MiraCore3D + MiraRibbons). Each orbiting line is a
+         true 3D loop: a circle in its own tilted plane, radius 0.95–2.05 of
+         the ring by golden rank, shaped by the original's five radius
+         harmonics and two out-of-plane lifts, drawn as a camera-facing
+         ribbon whose shader lights bright and dark stretches along its
+         length, adds a travelling white hot spot, fades the line where it
+         crosses behind the ring and shades it by depth. Around it: line
+         smoke, star dust riding the lines, the three far waves with their
+         own dust, floating motes, the particle core, the centre light and
+         the ring's neon + gold spill — all with the original's dial
+         numbers. The old port spun flat 2D ellipses at one flat alpha;
+         that was the scribble Hesham saw. */
+      var GLW = 1600, GC = 800;               /* stage units; orb centre (800, 800) */
+      var glCv = document.getElementById("miraGl"), glx = null, glOK = false, GQ = 1;
+      var TAU = Math.PI * 2;
+      var VL = 1.95, VR = 2;                  /* voice.lines / voice.ring (original dial defaults) */
+      var glWpu = 0.005, glCt = 0;
+      function hashN(i, k){ var x = Math.sin(i * 12.9898 + k * 78.233 + 4.1) * 43758.5453; return x - Math.floor(x); }
+      function fracN(x){ return x - Math.floor(x); }
+
+      /* ---------- per-line parameters, exactly the original's buildLine ---------- */
+      var LSEG = 192, lines = [];
+      function buildLines(){
+        lines = [];
+        for (var i = 0; i < 28; i++){
+          (function(i){
+            var h = function(k){ return hashN(i + 1, k); };
+            var harm = [], lift = [], k;
+            for (k = 1; k <= 5; k++) harm.push({ k: k, amp: [0.1, 0.17, 0.11, 0.07, 0.045][k - 1] * (0.5 + h(10 + k)), ph: h(20 + k) * TAU, w: (0.02 + 0.05 * h(30 + k)) * (h(40 + k) < 0.5 ? -1 : 1) });
+            [2, 3].forEach(function(kk, j){ lift.push({ k: kk, amp: [0.22, 0.13][j] * (0.4 + 0.9 * h(50 + kk)), ph: h(60 + kk) * TAU, w: (0.015 + 0.04 * h(70 + kk)) * (h(80 + kk) < 0.5 ? -1 : 1) }); });
+            lines.push({
+              seed: i * 5.17 + 2.3, harm: harm, lift: lift,
+              rank: fracN((i + 1) * 0.618034), oval: 0.25 + 0.75 * h(1),
+              th0: (h(2) - 0.5) * 70 * Math.PI / 180, thA: 0.3 + 0.45 * h(3), thW: 0.018 + 0.03 * h(4), thP: h(5) * TAU,
+              tilt: 0.25 + 0.75 * h(6), az: h(7) * TAU, prec: (0.012 + 0.03 * h(8)) * (h(9) < 0.5 ? -1 : 1), lag: 0.45 + 1.3 * h(90),
+              goldPick: h(91), smokePick: 0.35 + 0.65 * h(92), bright: 0.16 + 1.05 * Math.pow(h(93), 2),
+              hotDir: h(94) < 0.5 ? -1 : 1, hotSpeed: 0.03 + 0.07 * h(95), hotK: 70 + 160 * h(96), hotGain: 0.6 + 0.6 * h(97),
+              phase: h(98), jumps: 0, R: 0, on: false, gold: 0, envelope: 0,
+              c: new Float32Array((LSEG + 1) * 3), vbo: null
+            });
+          })(i);
+        }
+      }
+      buildLines();
+
+      /* ---------- particle core (the original's Core) ---------- */
+      var CN = 1200, cDir = new Float32Array(CN * 3), cPhase = new Float32Array(CN), cSpeed = new Float32Array(CN), cBall = new Float32Array(CN), cPos = new Float32Array(CN * 3);
+      for (var ci = 0; ci < CN; ci++){
+        var th2 = Math.random() * TAU, ph3 = Math.acos(2 * Math.random() - 1);
+        cDir[ci * 3] = Math.sin(ph3) * Math.cos(th2); cDir[ci * 3 + 1] = Math.sin(ph3) * Math.sin(th2); cDir[ci * 3 + 2] = Math.cos(ph3);
+        cPhase[ci] = Math.random() * TAU; cSpeed[ci] = 0.7 + Math.random() * 1.7;
+        cBall[ci] = 0.16 + Math.pow(Math.random(), 0.6) * 0.84;
+      }
+      var coreRt = 0.85, coreMT = 0, coreRotY = 0, coreDraw = 1200;
+      var corePosArr = new Float32Array(CN * 3), coreSzArr = new Float32Array(CN);
+      function buildParticles(){ coreDraw = Math.min(CN, Math.round(DIAL.coreParticles)); }
+      buildParticles();
+
+      /* ---------- floating motes (the original's matter pools) ---------- */
+      var MPOOLS = [
+        { n: 220, size: 0.012, col: [0.62, 0.65, 0.70], alpha: 0.55 },
+        { n: 56, size: 0.026, col: [0.85, 0.78, 0.66], alpha: 0.75 },
+        { n: 12, size: 0.05, col: [0.97, 0.95, 0.92], alpha: 0.95 }
       ];
-      var rwFire = null, rwRunning = false, rwStartLoop = null;
-      (function buildWeb(){
-        var svg = document.getElementById("rwSvg");
-        var NS = "http://www.w3.org/2000/svg", AX = 340, AY = 240;
-        var P = { ring: '#1b5f78', pcb: '#1c5f7a', pcbDot: '#37d6ef', fieldMesh: '#143f4f', fieldDot: '#2bd0e6',
-                  mesh: '#1a5468', spoke: '#22566b', spokeHot: '#33eaff', link: '#5eead4',
-                  label: '#dfeaf3', labelMinor: '#93a8ba', labelDorm: '#546a7d', mote: '#5fe0f2', moteHot: '#bff6ff',
-                  col: { consultant: '#00e5ff', doer: '#f5a623', tool: '#7f9bb3' } };
-        var mk = function(t, a){ var e = document.createElementNS(NS, t); for (var k in (a || {})) e.setAttribute(k, a[k]); return e; };
-        var defs = mk('defs');
-        defs.innerHTML = '<filter id="rw-glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter><filter id="rw-soft" x="-150%" y="-150%" width="400%" height="400%"><feGaussianBlur stdDeviation="9"/></filter><filter id="rw-line" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
-        var ringsG = mk('g'), pcbG = mk('g'), fillG = mk('g'), meshG = mk('g'), spokesG = mk('g'), pulsesG = mk('g'), nodesG = mk('g'), coreG = mk('g');
-        svg.append(defs, pcbG, ringsG, fillG, meshG, spokesG, pulsesG, nodesG, coreG);
-        [pcbG, meshG, spokesG].forEach(function(grp){ grp.setAttribute('filter', 'url(#rw-line)'); });
-        var seed = 11; function rnd(){ return (seed = (seed * 9301 + 49297) % 233280) / 233280; }
-        function pathD(bx, by, bend){
-          var mx = (AX + bx) / 2, my = (AY + by) / 2, dx = bx - AX, dy = by - AY, l = Math.hypot(dx, dy) || 1;
-          return "M" + AX + " " + AY + " Q" + (mx + (-dy / l) * bend) + " " + (my + (dx / l) * bend) + " " + bx + " " + by;
+      MPOOLS.forEach(function(pool){
+        var n = pool.n;
+        pool.home = new Float32Array(n); pool.vel = new Float32Array(n * 3); pool.pos = new Float32Array(n * 3); pool.seed = new Float32Array(n);
+        pool.stage = new Float32Array(n * 3);
+        for (var i = 0; i < n; i++){
+          var a = Math.random() * TAU;
+          var hh = 1.2 + Math.pow(Math.random(), 0.8) * (pool.size < 0.02 ? 2.2 : 1.3);
+          pool.home[i] = hh;
+          pool.pos[i * 3] = Math.cos(a) * hh; pool.pos[i * 3 + 1] = Math.sin(a) * hh * 0.9; pool.pos[i * 3 + 2] = (Math.random() - 0.5) * 0.6;
+          pool.seed[i] = Math.random() * 6.283;
         }
-        var live = [];
-        function spawn(spoke, faint){
-          var el = mk('circle', { r: faint ? 0.9 : 1.4, fill: faint ? P.mote : P.moteHot, filter: 'url(#rw-glow)' });
-          pulsesG.append(el); live.push({ el: el, born: performance.now(), spoke: spoke, L: spoke.getTotalLength(), faint: faint });
+      });
+
+      /* ---------- star dust (the original's ribbonDust + seats) ---------- */
+      function makeDustSet(per, ribbons, size, seed){
+        var n = per * ribbons, set = { per: per, n: n, u: new Float32Array(n), speed: new Float32Array(n), phase: new Float32Array(n), sz: new Float32Array(n), v: new Float32Array(n) };
+        var h = function(i, k){ var x = Math.sin(i * 12.9898 + k * 78.233 + seed * 3.7) * 43758.5453; return x - Math.floor(x); };
+        for (var i = 0; i < n; i++){
+          set.u[i] = h(i, 1); set.speed[i] = (0.008 + 0.028 * h(i, 2)) * (h(i, 3) < 0.5 ? -1 : 1);
+          set.v[i] = h(i, 4) * 2 - 1; set.phase[i] = h(i, 5);
+          set.sz[i] = size * (0.45 + 1.1 * Math.pow(h(i, 6), 2.2));
         }
-        [72, 128, 186].forEach(function(r){ ringsG.append(mk('circle', { cx: AX, cy: AY, r: r, fill: 'none', stroke: P.ring, opacity: 0.32, 'stroke-width': 1, 'stroke-dasharray': '1 7' })); });
-        [-1, 1].forEach(function(side){ for (var i = 0; i < 6; i++){
-          var y = AY + (i - 2.5) * 52 + (rnd() * 16 - 8);
-          var startX = AX + side * (126 + rnd() * 34);
-          var midX = side < 0 ? (40 + rnd() * 56) : (584 + rnd() * 56);
-          var y2 = y + (rnd() * 30 - 15);
-          var jogX = side < 0 ? (10 + rnd() * 18) : (652 + rnd() * 18);
-          pcbG.append(mk('path', { d: "M" + startX + " " + y + " H" + midX + " V" + y2 + " H" + jogX, fill: 'none', stroke: P.pcb, opacity: 0.5, 'stroke-width': 1 }));
-          pcbG.append(mk('circle', { cx: jogX, cy: y2, r: 2.4, fill: P.pcbDot, opacity: 0.85 }));
-          pcbG.append(mk('circle', { cx: startX, cy: y, r: 1.3, fill: P.fieldDot, opacity: 0.45 }));
-        } });
-        var fill = []; for (var fi = 0; fi < 15; fi++){ var fx = 36 + rnd() * 608, fy = 34 + rnd() * 412; if (Math.hypot(fx - AX, fy - AY) > 175) fill.push({ x: fx, y: fy }); }
-        fill.forEach(function(f){
-          var near = null, nd = 1e9;
-          fill.forEach(function(g2){ if (g2 !== f){ var d = Math.hypot(g2.x - f.x, g2.y - f.y); if (d < nd){ nd = d; near = g2; } } });
-          if (near && nd < 110) meshG.append(mk('line', { x1: f.x, y1: f.y, x2: near.x, y2: near.y, stroke: P.fieldMesh, 'stroke-width': 1, opacity: 0.45 }));
-          var c = mk('circle', { cx: f.x, cy: f.y, r: 1.1, fill: P.fieldDot });
-          c.style.animation = "rwTwinkle 4s ease-in-out " + (rnd() * 4).toFixed(2) + "s infinite";
-          fillG.append(c);
-        });
-        var map = {}, pts = [];
-        ROSTER_POS.forEach(function(r){ var n = { id: r[0], label: r[1], layer: r[2], x: r[3], y: r[4], live: r[5], bend: r[6], r: r[7], col: P.col[r[2]] }; map[r[0]] = n; pts.push(n); });
-        var MINR = 128;
-        pts.forEach(function(n){ var dx = n.x - AX, dy = n.y - AY, d = Math.hypot(dx, dy) || 1; if (d < MINR){ n.x = AX + dx / d * MINR; n.y = AY + dy / d * MINR; } });
-        pts.forEach(function(n){
-          var o = pts.filter(function(m){ return m !== n; }).map(function(m){ return { m: m, d: Math.hypot(m.x - n.x, m.y - n.y) }; }).sort(function(a, b){ return a.d - b.d; })[0];
-          if (o && n.id < o.m.id && o.d < 150) meshG.append(mk('line', { x1: n.x, y1: n.y, x2: o.m.x, y2: o.m.y, stroke: P.mesh, 'stroke-width': 1, opacity: 0.5 }));
-        });
-        pts.forEach(function(n){
-          n.spoke = mk('path', { d: pathD(n.x, n.y, n.bend), fill: 'none', stroke: P.spoke, 'stroke-width': 1, opacity: n.live ? 0.78 : 0.4 });
-          spokesG.append(n.spoke);
-          var rr = n.live ? n.r : 5.5;
-          n.haloR = rr + 1.5; n.phase = rnd() * 6.283;
-          n.halo = mk('circle', { cx: n.x, cy: n.y, r: n.haloR, fill: n.col, filter: 'url(#rw-glow)', opacity: n.live ? 0.34 : 0.2 });
-          nodesG.append(n.halo);
-          n.circ = mk('circle', { cx: n.x, cy: n.y, r: rr, fill: 'none', stroke: n.col, 'stroke-width': n.live ? 2 : 1.3, opacity: n.live ? 1 : 0.6 });
-          if (!n.live) n.circ.setAttribute('stroke-dasharray', '2 2');
-          nodesG.append(n.circ);
-          var dx = n.x - AX, dy = n.y - AY, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, off = rr + 11;
-          var above = uy > 0.82;
-          var minor = !n.live || n.layer === 'tool';
-          var t = mk('text', {
-            x: above ? n.x : n.x + ux * off,
-            y: above ? n.y - (rr + 9) : n.y + uy * off + (Math.abs(uy) < 0.3 ? 4 : 0),
-            'text-anchor': above ? 'middle' : (ux > 0.3 ? 'start' : (ux < -0.3 ? 'end' : 'middle')),
-            'font-size': minor ? 9.5 : 12, 'font-family': 'inherit',
-            fill: !n.live ? P.labelDorm : (minor ? P.labelMinor : P.label),
-            opacity: !n.live ? 0.75 : 1 });
-          t.textContent = n.label;
-          nodesG.append(t);
-          var hit = mk('circle', { cx: n.x, cy: n.y, r: Math.max(rr + 13, 17), fill: 'transparent' });
-          hit.style.pointerEvents = 'all'; hit.style.cursor = 'pointer';
-          hit.setAttribute('tabindex', '0'); hit.setAttribute('role', 'button');
-          hit.setAttribute('aria-label', n.label + ' agent — open overview');
-          var activate = function(){ openCard({ name: n.label, key: n.id, color: n.col }); if (rwFire) rwFire([n.id]); };
-          hit.addEventListener('click', activate);
-          hit.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); activate(); } });
-          hit.addEventListener('focus', function(){ n.circ.setAttribute('filter', 'url(#rw-glow)'); n.circ.setAttribute('stroke-width', n.live ? 3 : 2); });
-          hit.addEventListener('blur', function(){ n.circ.removeAttribute('filter'); n.circ.setAttribute('stroke-width', n.live ? 2 : 1.3); });
-          nodesG.append(hit);
-        });
-        rwFire = function(ids){
-          ids.forEach(function(id, k){
-            var n = map[id]; if (!n) return;
-            setTimeout(function(){
-              n.spoke.setAttribute('stroke', P.spokeHot); n.spoke.setAttribute('stroke-width', 1.6); n.spoke.setAttribute('opacity', 0.7);
-              n._until = performance.now() + 1150;
-              var stream = function(){ if (performance.now() < n._until){ spawn(n.spoke, false); setTimeout(stream, 105); } };
-              stream();
-              setTimeout(function(){ n.circ.setAttribute('filter', 'url(#rw-glow)'); n.circ.setAttribute('r', (n.live ? n.r : 5.5) + 3); n.circ.setAttribute('stroke-width', n.live ? 3 : 2); n.circ.setAttribute('opacity', 1); }, 560);
-              setTimeout(function(){
-                n.spoke.setAttribute('stroke', P.spoke); n.spoke.setAttribute('stroke-width', 1); n.spoke.setAttribute('opacity', n.live ? 0.78 : 0.4);
-                n.circ.removeAttribute('filter'); n.circ.setAttribute('r', n.live ? n.r : 5.5); n.circ.setAttribute('stroke-width', n.live ? 2 : 1.3); n.circ.setAttribute('opacity', n.live ? 1 : 0.6);
-              }, 2050);
-            }, k * 210);
-          });
-          var co = ids.map(function(id){ return map[id]; }).filter(Boolean);
-          for (var i = 0; i < co.length - 1; i++){
-            var a = co[i], b = co[i + 1];
-            var ln = mk('line', { x1: +a.circ.getAttribute('cx'), y1: +a.circ.getAttribute('cy'), x2: +b.circ.getAttribute('cx'), y2: +b.circ.getAttribute('cy'), stroke: P.link, 'stroke-width': 1.3, opacity: 0 });
-            pulsesG.append(ln);
-            setTimeout(function(){ ln.setAttribute('opacity', 0.6); }, 560);
-            setTimeout(function(){ ln.remove(); }, 2400);
-          }
-        };
-        var allSpokes = pts.map(function(p){ return p.spoke; });
-        var last = performance.now(), phase = 0, nextAmbient = last + 1200;
-        var LVL = 0.32; // standby level, as the original's LEVEL map
-        function loop(t){
-          if (!worldActive){ rwRunning = false; return; }
-          rwRunning = true;
-          var dt = Math.min(0.05, (t - last) / 1000); last = t;
-          phase += dt * (0.85 + 1.9 * LVL);
-          for (var i = 0; i < pts.length; i++){
-            var n = pts[i]; if (!n.halo) continue;
-            var kk = (Math.sin(phase * 0.85 + n.phase) + 1) / 2;
-            n.halo.setAttribute('opacity', (n.live ? 0.16 : 0.09) + (n.live ? 0.30 : 0.18) * kk);
-            n.halo.setAttribute('r', n.haloR + 2 * kk);
-          }
-          if (t > nextAmbient && live.length < 8){
-            if (allSpokes.length){ spawn(allSpokes[(Math.random() * allSpokes.length) | 0], true); }
-            var base = 470 - 330 * LVL;
-            nextAmbient = t + base * (0.5 + Math.random() * 0.7);
-          }
-          for (var j = live.length - 1; j >= 0; j--){
-            var p = live[j], pr = (t - p.born) / 620;
-            if (pr >= 1){ p.el.remove(); live.splice(j, 1); continue; }
-            var q = p.spoke.getPointAtLength(pr * p.L);
-            p.el.setAttribute('cx', q.x); p.el.setAttribute('cy', q.y);
-            p.el.setAttribute('opacity', (p.faint ? 0.4 : 0.9) * Math.sin(pr * Math.PI));
-          }
-          requestAnimationFrame(loop);
+        return set;
+      }
+      var lineDust = makeDustSet(40, 28, 3, 2);
+      var lineSeats = (function(){
+        var n = 40 * 28, s = { ox: new Float32Array(n), oy: new Float32Array(n), oz: new Float32Array(n), far: new Float32Array(n), wob: new Float32Array(n) };
+        for (var g = 0; g < n; g++){
+          var a = hashN(g, 101) * TAU, z = hashN(g, 102) * 2 - 1, sq = Math.sqrt(1 - z * z);
+          s.ox[g] = Math.cos(a) * sq; s.oy[g] = Math.sin(a) * sq; s.oz[g] = z * 0.6;
+          s.far[g] = Math.pow(hashN(g, 103), 2.6); s.wob[g] = hashN(g, 104) * TAU;
         }
-        rwStartLoop = function(){ if (!rwRunning){ last = performance.now(); requestAnimationFrame(loop); } };
+        return s;
       })();
+      var waveDust = makeDustSet(56, 3, 2.8, 5);
+      var ldPos = new Float32Array(lineDust.n * 3), ldSz = new Float32Array(lineDust.n);
+      var wdPos = new Float32Array(waveDust.n * 3);
 
-      /* ---------- agent overview cards — the original's INFO template, verbatim ---------- */
-      var ROSTERL = [
-        { key: "chief_of_staff", name: "Chief of staff", color: "#00e5ff" },
-        { key: "memory", name: "Memory", color: "#00e5ff" },
-        { key: "strategist", name: "Strategist", color: "#00e5ff" },
-        { key: "researcher", name: "Researcher", color: "#00e5ff" },
-        { key: "finance", name: "Finance", color: "#00e5ff" },
-        { key: "editor", name: "Editor", color: "#00e5ff" },
-        { key: "sales", name: "Sales", color: "#f5a623" },
-        { key: "marketing", name: "Marketing", color: "#f5a623" },
-        { key: "ops", name: "Ops", color: "#f5a623" },
-        { key: "social_media", name: "Social", color: "#f5a623" },
-        { key: "engineering", name: "Engineering", color: "#f5a623" },
-        { key: "design", name: "Design", color: "#f5a623" },
-        { key: "developer", name: "Developer", color: "#f5a623" },
-        { key: "analytics", name: "Analytics", color: "#7f9bb3" },
-        { key: "crm", name: "CRM", color: "#7f9bb3" },
-        { key: "calendar", name: "Calendar", color: "#7f9bb3" },
-        { key: "email", name: "Email", color: "#7f9bb3" },
-        { key: "drive", name: "Drive", color: "#7f9bb3" }
-      ];
-      var INFO = {
-        chief_of_staff: { role: "Right hand - runs the day", status: "online", caps: ["Prioritizes the day and keeps loose ends closed", "Routes every request to the right specialist", "Escalates only what truly needs a human"], asks: ["What needs attention today?", "Chase the open quotes"] },
-        memory: { role: "Long-term memory", status: "online", caps: ["Remembers every client, project and decision", "Feeds context into every task automatically", "Learns preferences over time"], asks: ["What did we decide about X?", "History with this client"] },
-        strategist: { role: "Big-picture thinking", status: "online", caps: ["Weekly strategy reviews", "Goal and milestone tracking", "Spots opportunities and risks early"], asks: ["Where should we double down?"] },
-        researcher: { role: "Deep research", status: "online", caps: ["Market and competitor research", "Technical deep-dives", "Source-checked summaries"], asks: ["Research this market", "Compare these suppliers"] },
-        finance: { role: "Money watch", status: "online", caps: ["Revenue and pipeline tracking", "Pricing sanity checks", "Monthly performance recaps"], asks: ["How was this month?", "Is this quote priced right?"] },
-        editor: { role: "Quality gate", status: "online", caps: ["Rewrites and tightens every draft", "Keeps the brand voice consistent", "Final pass before anything ships"], asks: ["Polish this post", "Tighten this email"] },
-        sales: { role: "Deal closer", status: "online", caps: ["Follow-ups for every lead", "Warm-outreach drafts", "Pipeline nudges so nothing goes cold"], asks: ["Draft a follow-up", "Who went quiet?"] },
-        marketing: { role: "Growth engine", status: "online", caps: ["Campaign generation", "Pricing analysis", "Brand positioning and content calendar"], asks: ["Generate campaign", "Competitor research"] },
-        ops: { role: "Business operator", status: "online", caps: ["Client quotes and proposals", "Project scoping and timelines", "Supplier sourcing"], asks: ["Draft client quote", "Build project scope"] },
-        social_media: { role: "Voice of the brand", status: "online", caps: ["Writes posts and captions", "Creates reel scripts", "Posts to Instagram, LinkedIn and Facebook"], asks: ["Write post caption", "Plan content week"] },
-        engineering: { role: "Engineering brain", status: "online", caps: ["3D-print settings and materials", "Tolerances and fit", "Laser power and speed guidance"], asks: ["Review STL file", "Calculate tolerances"] },
-        design: { role: "Visual workshop", status: "online", caps: ["Background removal and replacement", "Text overlays", "Resize for social media", "Filters and enhancement"], asks: ["Remove background", "Resize for IG"] },
-        developer: { role: "Keeper of the build log", status: "standby", caps: ["Keeps Apex's development log", "Recaps what shipped - day / week / month", "Future: builds Apex itself"], asks: ["Recap last week"] },
-        analytics: { role: "Numbers feed", status: "integration", caps: ["Performance metrics across every channel", "Feeds the weekly reviews"] },
-        crm: { role: "Client memory bank", status: "integration", caps: ["Every lead and client in one pipeline", "Stage tracking from first contact to paid"] },
-        calendar: { role: "Schedule sense", status: "integration", caps: ["Knows the calendar", "Reminders and follow-up timing"] },
-        email: { role: "Inbox hands", status: "integration", caps: ["Inbox triage and reply drafts", "Connected and in use"] },
-        drive: { role: "File access", status: "integration", caps: ["Reads and files documents", "Connected and in use"] }
-      };
-      var STATUS_LINE = {
-        online: { color: "#34d399", text: "Online - Apex routes work to it automatically" },
-        standby: { color: "#c9a84c", text: "Standby - in active development" },
-        integration: { color: "#7f9bb3", text: "Integration - wired into the core" }
-      };
-      var card = document.getElementById("agentCard"), cardPos = null, lastFocus = null;
-      function closeCard(){ card.hidden = true; if (lastFocus && document.contains(lastFocus) && lastFocus.focus) lastFocus.focus(); }
-      function openCard(sel){
-        var info = INFO[sel.key] || { role: "Specialist", status: "online", caps: ["Part of the Apex core"] };
-        var c = sel.color, st = STATUS_LINE[info.status];
-        var asksHtml = "";
-        if (info.asks && info.asks.length){
-          asksHtml = '<div><div class="ac-h" style="color:' + c + '99">EXAMPLE REQUESTS</div><div class="ac-asks">' +
-            info.asks.map(function(a){ return '<span class="ac-ask" style="background:' + c + '0d;border-color:' + c + '2a;color:' + c + 'cc">' + esc(a) + '</span>'; }).join("") + '</div></div>';
+      /* ---------- far waves (the original's MiraRibbons) ---------- */
+      var RSEG = 64, ribbons = [];
+      for (var ri = 0; ri < 3; ri++){
+        (function(i){
+          var seed = i * 7.31 + 1.7, n = 6 + (i % 2), pts = [];
+          var y0 = -3 + (i / 2) * 6 + Math.sin(seed) * 0.8;
+          var tilt = Math.sin(seed * 1.9) * 0.55, z = -2.2 - (i % 3) * 0.6;
+          for (var k = 0; k < n; k++){
+            var u = k / (n - 1);
+            pts.push({ bx: -9 + u * 18, by: y0 + (u - 0.5) * tilt * 6, bz: z, off: seed * 3.1 + k * 1.37, freq: 0.045 + 0.025 * (((k * 3 + i) % 5) / 4), amp: 0.9 + 1.3 * (((k * 7 + i * 3) % 6) / 5), cx: 0, cy: 0, cz: 0 });
+          }
+          ribbons.push({ seed: seed, pts: pts, width: 0.2 + 0.14 * ((i * 5) % 3) / 2, curve: new Float32Array((RSEG + 1) * 3), vbo: null });
+        })(ri);
+      }
+      function crPoint(pts, u, out){
+        var n = pts.length - 1, f = u * n, idx = Math.min(n - 1, Math.floor(f)), t = f - idx;
+        var p0 = pts[Math.max(0, idx - 1)], p1 = pts[idx], p2 = pts[idx + 1], p3 = pts[Math.min(n, idx + 2)];
+        var t2 = t * t, t3 = t2 * t;
+        out.x = 0.5 * ((2 * p1.cx) + (-p0.cx + p2.cx) * t + (2 * p0.cx - 5 * p1.cx + 4 * p2.cx - p3.cx) * t2 + (-p0.cx + 3 * p1.cx - 3 * p2.cx + p3.cx) * t3);
+        out.y = 0.5 * ((2 * p1.cy) + (-p0.cy + p2.cy) * t + (2 * p0.cy - 5 * p1.cy + 4 * p2.cy - p3.cy) * t2 + (-p0.cy + 3 * p1.cy - 3 * p2.cy + p3.cy) * t3);
+        out.z = 0.5 * ((2 * p1.cz) + (-p0.cz + p2.cz) * t + (2 * p0.cz - 5 * p1.cz + 4 * p2.cz - p3.cz) * t2 + (-p0.cz + 3 * p1.cz - 3 * p2.cz + p3.cz) * t3);
+      }
+
+      /* ---------- shaders, ported from the original's GLSL ---------- */
+      var LINE_VS = [
+        "attribute vec3 position; attribute vec2 uv; attribute vec3 aDir; attribute vec2 aZ;",
+        "uniform vec2 uRes; uniform float uHalfPx;",
+        "varying vec2 vUv; varying float vZ; varying float vZn;",
+        "void main(){ vUv = uv; vZ = position.z; vZn = aZ.x;",
+        " vec2 c0 = vec2(position.x / 800.0 - 1.0, 1.0 - position.y / 800.0);",
+        " vec2 c1 = vec2((position.x + aDir.x) / 800.0 - 1.0, 1.0 - (position.y + aDir.y) / 800.0);",
+        " vec2 dv = (c1 - c0) * uRes; float l = length(dv);",
+        " vec2 dir = l > 1e-5 ? dv / l : vec2(1.0, 0.0);",
+        " c0 += vec2(-dir.y, dir.x) * uv.y * uHalfPx * 2.0 / uRes;",
+        " gl_Position = vec4(c0, 0.0, 1.0); }"
+      ].join("\n");
+      var LINE_COMMON = [
+        "precision highp float;",
+        "uniform float uTime, uOpacity, uSeed, uCross, uRw;",
+        "uniform vec2 uOrbPx; uniform float uOrbR;",
+        "varying vec2 vUv; varying float vZ; varying float vZn;",
+        "float hash21(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }",
+        "float noise21(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);",
+        " return mix(mix(hash21(i), hash21(i+vec2(1.,0.)), f.x), mix(hash21(i+vec2(0.,1.)), hash21(i+vec2(1.,1.)), f.x), f.y); }",
+        "float lit(){ vec2 c=vec2(cos(vUv.x*6.28318), sin(vUv.x*6.28318));",
+        " float a=noise21(c*1.6 + uSeed + vec2(uTime*.050, -uTime*.035));",
+        " float b=noise21(c*4.1 + uSeed*1.7 + vec2(-uTime*.080, uTime*.060));",
+        " return smoothstep(.28, .82, a*.65 + b*.35); }",
+        "float ringMask(){ float inner=mix(.97, uCross, smoothstep(-.15, .35, vZ));",
+        " return smoothstep(uOrbR*inner, uOrbR*(inner+.2), distance(gl_FragCoord.xy, uOrbPx)); }",
+        "float depthLight(){ return mix(.45, 1.15, smoothstep(-.9, .9, vZn)); }"
+      ].join("\n");
+      var LINE_CORE_FS = LINE_COMMON + "\n" + [
+        "uniform float uGlow, uGlowVar, uCoreFrac, uGold;",
+        "uniform float uHot, uHotK, uHotStrength;",
+        "void main(){",
+        " float v=abs(vUv.y);",
+        " float wire=exp(-pow(v/uCoreFrac, 2.0));",
+        " float halo=exp(-v*v*7.0)*.10;",
+        " float p=lit();",
+        " float b=mix(1.0, .07 + pow(p, 1.7)*2.1, uGlowVar);",
+        " vec3 silver=vec3(.72,.76,.82), warmWhite=vec3(.96,.90,.80), white=vec3(1.7,1.62,1.5);",
+        " vec3 warm=vec3(1.0,.52,.20);",
+        " vec3 col=mix(mix(silver, warmWhite, p), warm*.8, uGold)*b;",
+        " col+=white*smoothstep(.62, 1.0, p)*.55*uGlowVar*(1.0-.5*uGold);",
+        " float d=abs(vUv.x-uHot); d=min(d, 1.0-d);",
+        " col+=white*exp(-d*d*uHotK)*uHotStrength;",
+        " col+=vec3(1.0,.72,.38)*exp(-d*d*uHotK*.2)*.18*uHotStrength;",
+        " gl_FragColor=vec4(col*(wire+halo)*uGlow*depthLight(), ringMask()*uOpacity); }"
+      ].join("\n");
+      var LINE_SMOKE_FS = LINE_COMMON + "\n" + [
+        "uniform float uSmoke;",
+        "void main(){",
+        " float v=vUv.y;",
+        " float fall=max(0.0, exp(-v*v*3.2)-.0408)/.9592;",
+        " vec2 c=vec2(cos(vUv.x*6.28318), sin(vUv.x*6.28318))*2.7;",
+        " vec2 q=c + vec2(v*.9, -v*.7) + uSeed*2.3;",
+        " float w=noise21(q + vec2(uTime*.045, uTime*.03))*.62 + noise21(q*2.3 - vec2(uTime*.06, -uTime*.04))*.38;",
+        " w=smoothstep(.32, .80, w);",
+        " vec3 col=mix(vec3(.30,.31,.34), vec3(.60,.58,.55), w);",
+        " float a=fall*w*(.30+.70*lit())*uSmoke*.34*depthLight();",
+        " gl_FragColor=vec4(col*a, ringMask()*uOpacity); }"
+      ].join("\n");
+      var QUAD_VS = "attribute vec3 position; attribute vec2 uv; varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.x/800.0-1.0, 1.0-position.y/800.0, 0.0, 1.0); }";
+      var RINGGLOW_FS = [
+        "precision highp float;",
+        "uniform float uOpacity, uTime, uVoice, uTalk, uNeon, uNeonW, uSpill;",
+        "uniform vec2 uOrbPx; uniform float uOrbR;",
+        "void main(){",
+        " float d=distance(gl_FragCoord.xy, uOrbPx)/uOrbR;",
+        " float neon=exp(-pow((d-1.0)*uOrbR/(uNeonW + 1.2*uVoice), 2.0));",
+        " float outer=smoothstep(1.6, 1.0, d)*step(1.0, d);",
+        " vec3 white=vec3(1.7,1.62,1.5), gold=vec3(1.0,.62,.22);",
+        " vec3 col=white*neon*uNeon*(.9+.7*uVoice) + gold*outer*outer*uSpill*(.18+.20*uVoice+.05*uTalk)*(.9+.1*sin(uTime*.5));",
+        " gl_FragColor=vec4(col, uOpacity); }"
+      ].join("\n");
+      var TEX_FS = "precision highp float; uniform sampler2D uTex; uniform vec3 uTint; uniform float uOpacity; varying vec2 vUv; void main(){ vec4 tx=texture2D(uTex, vUv); gl_FragColor=vec4(uTint*tx.rgb, tx.a*uOpacity); }";
+      var DUST_VS = [
+        "attribute vec3 position; attribute float aPhase; attribute float aSize;",
+        "uniform float uTime, uPx;",
+        "varying float vTw;",
+        "void main(){",
+        " float tw=.55+.45*sin(uTime*(1.2+aPhase*.9)+aPhase*6.2831); vTw=tw;",
+        " gl_PointSize=aSize*uPx*(.7+.5*tw);",
+        " gl_Position=vec4(position.x/800.0-1.0, 1.0-position.y/800.0, 0.0, 1.0); }"
+      ].join("\n");
+      var DUST_FS = [
+        "precision highp float;",
+        "uniform vec3 uColor; uniform float uOpacity; varying float vTw;",
+        "void main(){",
+        " float d=length(gl_PointCoord-.5)*2.0; if (d>1.0) discard;",
+        " float a=(1.0-d); a*=a;",
+        " gl_FragColor=vec4(uColor*(.7+.9*vTw), a*(.35+.65*vTw)*uOpacity); }"
+      ].join("\n");
+      var PTS_VS = [
+        "attribute vec3 position; attribute float aSize;",
+        "uniform float uPx;",
+        "void main(){ gl_PointSize=aSize*uPx; gl_Position=vec4(position.x/800.0-1.0, 1.0-position.y/800.0, 0.0, 1.0); }"
+      ].join("\n");
+      var PTS_FS = "precision highp float; uniform sampler2D uTex; uniform vec3 uColor; uniform float uOpacity; void main(){ vec4 tx=texture2D(uTex, gl_PointCoord); gl_FragColor=vec4(uColor*tx.rgb, tx.a*uOpacity); }";
+      var RIBBON_VS = "attribute vec3 position; attribute vec2 uv; varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.x/800.0-1.0, 1.0-position.y/800.0, 0.0, 1.0); }";
+      var RIBBON_FS = [
+        "precision highp float;",
+        "uniform float uTime, uOpacity, uEnergy, uSeed;",
+        "uniform vec2 uOrbPx; uniform float uOrbR;",
+        "varying vec2 vUv;",
+        "float hash21(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }",
+        "float noise21(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);",
+        " return mix(mix(hash21(i), hash21(i+vec2(1.,0.)), f.x), mix(hash21(i+vec2(0.,1.)), hash21(i+vec2(1.,1.)), f.x), f.y); }",
+        "float fbm3(vec2 p){ float v=0., a=.5; for(int i=0;i<3;i++){ v+=a*noise21(p); p=p*2.03+vec2(17.1,9.2); a*=.5; } return v; }",
+        "void main(){",
+        " float bright=1.0-smoothstep(0.0, 0.16, vUv.y);",
+        " float body=(1.0-smoothstep(0.10, 0.95, vUv.y))*0.55 + 0.10;",
+        " float endFade=smoothstep(0.0, 0.14, vUv.x)*(1.0-smoothstep(0.86, 1.0, vUv.x));",
+        " vec2 q=vec2(vUv.x*9.0 + uSeed, vUv.y*2.5);",
+        " float f=fbm3(q + vec2(uTime*0.05, -uTime*0.03));",
+        " float fold=pow(1.0-abs(f*2.0-1.0), 8.0);",
+        " float holes=smoothstep(0.25, 0.65, fbm3(q*0.7 + 3.1 + vec2(-uTime*0.02, uTime*0.035)));",
+        " float light=fbm3(vec2(vUv.x*3.5, vUv.y*0.8) + uSeed*1.7 + vec2(uTime*0.045, uTime*0.02));",
+        " float lit=smoothstep(0.40, 0.72, light);",
+        " float hot=pow(smoothstep(0.66, 0.84, light), 1.5)*max(bright, fold);",
+        " vec3 dark=vec3(0.15,0.14,0.13), silver=vec3(0.55,0.56,0.58), brightV=vec3(0.83,0.84,0.86);",
+        " vec3 lav=vec3(1.00,0.78,0.48), white=vec3(1.00,0.97,0.92);",
+        " vec3 col=mix(dark, silver, lit);",
+        " col=mix(col, brightV, bright*(0.4+0.6*lit));",
+        " col=mix(col, lav, clamp(fold*0.8 + bright*lit*0.5, 0.0, 1.0));",
+        " col=mix(col, white, clamp(hot*1.4, 0.0, 1.0));",
+        " float a=(0.05*body*holes + 0.30*bright*(0.5+0.5*lit) + 0.45*fold*holes)*endFade*uOpacity*(1.0+uEnergy*0.12);",
+        " a+=hot*0.22*endFade*uOpacity;",
+        " float behind=smoothstep(uOrbR*0.92, uOrbR*1.28, distance(gl_FragCoord.xy, uOrbPx));",
+        " a*=behind;",
+        " gl_FragColor=vec4(col, clamp(a, 0.0, 1.0)); }"
+      ].join("\n");
+
+      /* ---------- GL plumbing ---------- */
+      var P = {}, glowTex = null, quadVbo = null, lineIbo = null, ribIbo = null;
+      var quadData = new Float32Array(30);
+      var corePosB = null, coreSzB = null, ldPosB = null, ldSzB = null, ldPhB = null, wdPosB = null, wdSzB = null, wdPhB = null;
+      function mkProg(vs, fs){
+        var g = glx;
+        function sh(type, src){ var s = g.createShader(type); g.shaderSource(s, src); g.compileShader(s); if (!g.getShaderParameter(s, g.COMPILE_STATUS)){ try { console.warn("[mira] shader:", g.getShaderInfoLog(s)); } catch (e){} return null; } return s; }
+        var v = sh(g.VERTEX_SHADER, vs), f = sh(g.FRAGMENT_SHADER, fs);
+        if (!v || !f) return null;
+        var p = g.createProgram(); g.attachShader(p, v); g.attachShader(p, f); g.linkProgram(p);
+        if (!g.getProgramParameter(p, g.LINK_STATUS)) return null;
+        var rec = { prog: p, U: {}, A: {} }, i2, inf;
+        var nu = g.getProgramParameter(p, g.ACTIVE_UNIFORMS);
+        for (i2 = 0; i2 < nu; i2++){ inf = g.getActiveUniform(p, i2); rec.U[inf.name] = g.getUniformLocation(p, inf.name); }
+        var na = g.getProgramParameter(p, g.ACTIVE_ATTRIBUTES);
+        for (i2 = 0; i2 < na; i2++){ inf = g.getActiveAttrib(p, i2); rec.A[inf.name] = g.getAttribLocation(p, inf.name); }
+        return rec;
+      }
+      function dynVbo(data){ var g = glx, b = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, b); g.bufferData(g.ARRAY_BUFFER, data, g.DYNAMIC_DRAW); return b; }
+      function updVbo(b, data){ var g = glx; g.bindBuffer(g.ARRAY_BUFFER, b); g.bufferSubData(g.ARRAY_BUFFER, 0, data); }
+      var enabledAttribs = [];
+      function setAttribs(rec, list){
+        var g = glx, i;
+        for (i = 0; i < enabledAttribs.length; i++) g.disableVertexAttribArray(enabledAttribs[i]);
+        enabledAttribs = [];
+        for (i = 0; i < list.length; i++){
+          var loc = rec.A[list[i][0]];
+          if (loc == null || loc < 0) continue;
+          g.bindBuffer(g.ARRAY_BUFFER, list[i][2]);
+          g.enableVertexAttribArray(loc);
+          g.vertexAttribPointer(loc, list[i][1], g.FLOAT, false, list[i][3] || 0, list[i][4] || 0);
+          enabledAttribs.push(loc);
         }
-        card.innerHTML =
-          '<div class="ac-head" id="acHead" style="border-bottom-color:' + c + '22;background:linear-gradient(135deg,' + c + '0a 0%,transparent 100%)">' +
-            '<div class="ac-ava" style="background:' + c + '14;border-color:' + c + '44"><span class="ac-dot" style="background:' + c + ';box-shadow:0 0 10px ' + c + '"></span></div>' +
-            '<div><div class="ac-name" style="color:' + c + '">' + esc(sel.name.toUpperCase()) + '</div><div class="ac-role">' + esc(info.role) + '</div></div>' +
-            '<button class="ac-close" id="acClose" type="button" aria-label="Close">×</button></div>' +
-          '<div class="ac-body"><div><div class="ac-h" style="color:' + c + '99">WHAT IT HANDLES</div>' +
-            info.caps.map(function(cap){ return '<div class="ac-cap"><i style="background:' + c + '99"></i><span>' + esc(cap) + '</span></div>'; }).join("") +
-            '</div>' + asksHtml +
-            '<div class="ac-status" style="border-top-color:' + c + '1a"><i style="background:' + st.color + ';box-shadow:0 0 8px ' + st.color + '"></i><span>' + esc(st.text) + '</span></div></div>';
-        card.style.borderColor = c + "44";
-        card.style.boxShadow = "0 0 40px " + c + "18, 0 8px 32px rgba(0,0,0,0.6)";
-        cardPos = { x: Math.max(8, window.innerWidth / 2 - 170), y: Math.max(90, window.innerHeight * 0.16) };
-        card.style.left = cardPos.x + "px"; card.style.top = cardPos.y + "px";
-        card.setAttribute("aria-label", sel.name + " overview");
-        card.hidden = false;
-        lastFocus = document.activeElement;
-        var cl = document.getElementById("acClose"), head = document.getElementById("acHead");
-        cl.focus();
-        cl.addEventListener("click", closeCard);
-        head.addEventListener("pointerdown", function(e){
-          if (e.target === cl) return;
-          var off = { sx: e.clientX - cardPos.x, sy: e.clientY - cardPos.y };
-          try { head.setPointerCapture(e.pointerId); } catch (err) {}
-          function mv(ev){ cardPos.x = ev.clientX - off.sx; cardPos.y = ev.clientY - off.sy; card.style.left = cardPos.x + "px"; card.style.top = cardPos.y + "px"; }
-          function up(){ head.removeEventListener("pointermove", mv); head.removeEventListener("pointerup", up); head.removeEventListener("pointercancel", up); }
-          head.addEventListener("pointermove", mv); head.addEventListener("pointerup", up); head.addEventListener("pointercancel", up);
+      }
+      function blendAdd(){ var g = glx; g.blendFuncSeparate(g.SRC_ALPHA, g.ONE, g.ZERO, g.ONE); }
+      function blendNorm(){ var g = glx; g.blendFuncSeparate(g.SRC_ALPHA, g.ONE_MINUS_SRC_ALPHA, g.ZERO, g.ONE); }
+      function initGl(){
+        if (glOK) return true;
+        if (!glCv) return false;
+        try { glx = glCv.getContext("webgl", { alpha: true, antialias: true, premultipliedAlpha: false, powerPreference: "high-performance" }); } catch (e){ glx = null; }
+        if (!glx) return false;
+        var q = Math.min(window.devicePixelRatio || 1, 1.25);
+        glCv.width = Math.round(GLW * q); glCv.height = Math.round(GLW * q);
+        GQ = glCv.width / GLW;
+        glx.viewport(0, 0, glCv.width, glCv.height);
+        P.core = mkProg(LINE_VS, LINE_CORE_FS);
+        P.smoke = mkProg(LINE_VS, LINE_SMOKE_FS);
+        P.glow = mkProg(QUAD_VS, RINGGLOW_FS);
+        P.tex = mkProg(QUAD_VS, TEX_FS);
+        P.dust = mkProg(DUST_VS, DUST_FS);
+        P.pts = mkProg(PTS_VS, PTS_FS);
+        P.rib = mkProg(RIBBON_VS, RIBBON_FS);
+        if (!P.core || !P.smoke || !P.glow || !P.tex || !P.dust || !P.pts || !P.rib){ glx = null; return false; }
+        var tc = document.createElement("canvas"); tc.width = tc.height = 128;
+        var tg = tc.getContext("2d"), gr = tg.createRadialGradient(64, 64, 0, 64, 64, 64);
+        gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(0.12, "rgba(255,244,224,0.70)");
+        gr.addColorStop(0.35, "rgba(255,190,100,0.20)"); gr.addColorStop(0.7, "rgba(220,150,60,0.05)"); gr.addColorStop(1, "rgba(180,120,40,0)");
+        tg.fillStyle = gr; tg.fillRect(0, 0, 128, 128);
+        glowTex = glx.createTexture();
+        glx.bindTexture(glx.TEXTURE_2D, glowTex);
+        glx.texImage2D(glx.TEXTURE_2D, 0, glx.RGBA, glx.RGBA, glx.UNSIGNED_BYTE, tc);
+        glx.texParameteri(glx.TEXTURE_2D, glx.TEXTURE_MIN_FILTER, glx.LINEAR);
+        glx.texParameteri(glx.TEXTURE_2D, glx.TEXTURE_WRAP_S, glx.CLAMP_TO_EDGE);
+        glx.texParameteri(glx.TEXTURE_2D, glx.TEXTURE_WRAP_T, glx.CLAMP_TO_EDGE);
+        quadVbo = dynVbo(quadData);
+        var idx = [], s;
+        for (s = 0; s < LSEG; s++){ var a = s * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+        lineIbo = glx.createBuffer();
+        glx.bindBuffer(glx.ELEMENT_ARRAY_BUFFER, lineIbo);
+        glx.bufferData(glx.ELEMENT_ARRAY_BUFFER, new Uint16Array(idx), glx.STATIC_DRAW);
+        var ridx = [];
+        for (s = 0; s < RSEG; s++){ var a2 = s * 2; ridx.push(a2, a2 + 1, a2 + 2, a2 + 1, a2 + 3, a2 + 2); }
+        ribIbo = glx.createBuffer();
+        glx.bindBuffer(glx.ELEMENT_ARRAY_BUFFER, ribIbo);
+        glx.bufferData(glx.ELEMENT_ARRAY_BUFFER, new Uint16Array(ridx), glx.STATIC_DRAW);
+        corePosB = dynVbo(corePosArr); coreSzB = dynVbo(coreSzArr);
+        ldPosB = dynVbo(ldPos); ldSzB = dynVbo(ldSz); ldPhB = dynVbo(lineDust.phase);
+        wdPosB = dynVbo(wdPos); wdSzB = dynVbo(waveDust.sz); wdPhB = dynVbo(waveDust.phase);
+        MPOOLS.forEach(function(pool){
+          pool.posB = dynVbo(pool.stage);
+          var szArr = new Float32Array(pool.n);
+          for (var i = 0; i < pool.n; i++) szArr[i] = pool.size;
+          pool.szB = dynVbo(szArr);
         });
+        glOK = true;
+        return true;
       }
-      document.addEventListener("keydown", function(e){ if (e.key === "Escape" && !card.hidden) closeCard(); });
+      function drawQuad(rec, cxU, cyU, sizeU, setup){
+        var g = glx, hw = sizeU / 2, d = quadData;
+        var x0 = cxU - hw, x1 = cxU + hw, y0 = cyU - hw, y1 = cyU + hw;
+        d[0] = x0; d[1] = y0; d[2] = 0; d[3] = 0; d[4] = 0;
+        d[5] = x1; d[6] = y0; d[7] = 0; d[8] = 1; d[9] = 0;
+        d[10] = x0; d[11] = y1; d[12] = 0; d[13] = 0; d[14] = 1;
+        d[15] = x0; d[16] = y1; d[17] = 0; d[18] = 0; d[19] = 1;
+        d[20] = x1; d[21] = y0; d[22] = 0; d[23] = 1; d[24] = 0;
+        d[25] = x1; d[26] = y1; d[27] = 0; d[28] = 1; d[29] = 1;
+        g.useProgram(rec.prog);
+        updVbo(quadVbo, d);
+        setAttribs(rec, [["position", 3, quadVbo, 20, 0], ["uv", 2, quadVbo, 20, 12]]);
+        if (setup) setup(rec.U);
+        g.drawArrays(g.TRIANGLES, 0, 6);
+      }
+      function drawLine(rec, L, halfPx, extra){
+        var g = glx, U = rec.U;
+        g.useProgram(rec.prog);
+        setAttribs(rec, [["position", 3, L.vbo, 40, 0], ["aDir", 3, L.vbo, 40, 12], ["uv", 2, L.vbo, 40, 24], ["aZ", 2, L.vbo, 40, 32]]);
+        g.bindBuffer(g.ELEMENT_ARRAY_BUFFER, lineIbo);
+        if (U.uRes) g.uniform2f(U.uRes, glCv.width, glCv.height);
+        if (U.uHalfPx) g.uniform1f(U.uHalfPx, halfPx);
+        if (U.uTime) g.uniform1f(U.uTime, glCt);
+        if (U.uOpacity) g.uniform1f(U.uOpacity, 1);
+        if (U.uSeed) g.uniform1f(U.uSeed, L.seed);
+        if (U.uCross) g.uniform1f(U.uCross, 0.86);
+        if (U.uRw) g.uniform1f(U.uRw, L.R * glWpu);
+        if (U.uOrbPx) g.uniform2f(U.uOrbPx, glCv.width / 2, glCv.height / 2);
+        if (U.uOrbR) g.uniform1f(U.uOrbR, drawGl.orbR);
+        for (var k in extra) if (U[k]) g.uniform1f(U[k], extra[k]);
+        g.drawElements(g.TRIANGLES, LSEG * 6, g.UNSIGNED_SHORT, 0);
+      }
 
-      /* ---------- entering the humanoid: the bottom circle below, or
-         the spoken "open your humanoid" command via __apexUiEnter ---------- */
-      function enterHumanoid(){
-        if (leaving) return; leaving = true;
-        uiWorld.classList.add("uw-leaving");
-        setTimeout(function(){
-          uiWorld.style.display = "none";
-          uiWorld.classList.remove("uw-leaving");
-          worldActive = false; leaving = false;
-          if (window.__apexEnterHumanoid) window.__apexEnterHumanoid();
-        }, 480);
+      /* ---------- the frame ---------- */
+      var fxRunning = false;
+      var glClock = 0, waveClock = 0, ringGrow = 1;
+      var lineVerts = new Float32Array((LSEG + 1) * 2 * 10);
+      var ribVerts = new Float32Array((RSEG + 1) * 2 * 5);
+      function drawGl(t, dt){
+        if (!initGl()) return;
+        var g = glx;
+        dt = Math.min(dt || 0.016, 0.05);
+        var energy = M.voice, talk = M.talk;
+        var speed = DIAL.linesSpeed, chaos = DIAL.linesChaos;
+        glClock += dt * speed; waveClock += dt * 3;
+        var ct = glClock, wt = waveClock;
+        glCt = ct;
+        var vh = Math.max(1, window.innerHeight);
+        var wpu = 4.476 * miraFit.s / vh;
+        glWpu = wpu;
+        var Rring = 155 * (DIAL.ringDiameter / 310);
+        var growT = M.state === "listening" ? 1.17 : 1;
+        ringGrow += (growT - ringGrow) * Math.min(1, dt * 4);
+        var Rt = Rring * ringGrow;
+        var orbC = glCv.width / 2, orbR = Rt * GQ;
+        drawGl.orbR = orbR;
+        var pxr = GQ / Math.max(0.2, miraFit.s);
+        var scw = 0.55 / wpu;
+        g.clearColor(0, 0, 0, 0);
+        g.clear(g.COLOR_BUFFER_BIT);
+        g.enable(g.BLEND);
+        g.disable(g.DEPTH_TEST);
+
+        /* ---- far waves, behind everything ---- */
+        blendNorm();
+        var rj, rib, s, u;
+        var ptA = { x: 0, y: 0, z: 0 }, ptB = { x: 0, y: 0, z: 0 };
+        for (rj = 0; rj < ribbons.length; rj++){
+          rib = ribbons[rj];
+          for (var rp = 0; rp < rib.pts.length; rp++){
+            var pp = rib.pts[rp], aa = wt * pp.freq;
+            pp.cx = pp.bx + Math.sin(aa * 0.7 + pp.off) * pp.amp * 0.6;
+            pp.cy = pp.by + Math.sin(aa + pp.off) * pp.amp + Math.sin(aa * 2.3 + pp.off * 1.7) * pp.amp * 0.35;
+            pp.cz = pp.bz + Math.sin(aa * 0.5 + pp.off * 0.6) * 0.3;
+          }
+          for (s = 0; s <= RSEG; s++){
+            u = s / RSEG;
+            crPoint(rib.pts, u, ptA);
+            crPoint(rib.pts, Math.min(1, u + 1 / RSEG), ptB);
+            var txv = ptB.x - ptA.x, tyv = ptB.y - ptA.y, ln = Math.hypot(txv, tyv) || 1e-4; txv /= ln; tyv /= ln;
+            var sx = GC + ptA.x * scw, sy = GC - ptA.y * scw;
+            rib.curve[s * 3] = sx; rib.curve[s * 3 + 1] = sy; rib.curve[s * 3 + 2] = ptA.z;
+            var w = rib.width * 1.6 * (0.55 + 0.45 * Math.sin(u * 6.28318 * 1.3 + wt * 0.11 + rib.seed)) * (0.7 + 0.3 * Math.sin(u * 6.28318 * 0.6 - wt * 0.07 + rib.seed * 2));
+            var e1 = w * (0.5 + 0.35 * Math.sin(u * 6.28318 * 2.1 + wt * 0.09 + rib.seed * 1.3)) * scw;
+            var e2 = w * (0.5 + 0.35 * Math.sin(u * 6.28318 * 1.7 - wt * 0.13 + rib.seed * 0.7 + 2)) * scw;
+            var o = s * 10;
+            ribVerts[o] = sx + tyv * e1; ribVerts[o + 1] = sy + txv * e1; ribVerts[o + 2] = 0; ribVerts[o + 3] = u; ribVerts[o + 4] = 0;
+            ribVerts[o + 5] = sx - tyv * e2; ribVerts[o + 6] = sy - txv * e2; ribVerts[o + 7] = 0; ribVerts[o + 8] = u; ribVerts[o + 9] = 1;
+          }
+          if (!rib.vbo) rib.vbo = dynVbo(ribVerts); else updVbo(rib.vbo, ribVerts);
+          g.useProgram(P.rib.prog);
+          setAttribs(P.rib, [["position", 3, rib.vbo, 20, 0], ["uv", 2, rib.vbo, 20, 12]]);
+          g.bindBuffer(g.ELEMENT_ARRAY_BUFFER, ribIbo);
+          if (P.rib.U.uTime) g.uniform1f(P.rib.U.uTime, wt);
+          if (P.rib.U.uOpacity) g.uniform1f(P.rib.U.uOpacity, 0.36);
+          if (P.rib.U.uEnergy) g.uniform1f(P.rib.U.uEnergy, M.energy || 0);
+          if (P.rib.U.uSeed) g.uniform1f(P.rib.U.uSeed, rib.seed);
+          if (P.rib.U.uOrbPx) g.uniform2f(P.rib.U.uOrbPx, orbC, orbC);
+          if (P.rib.U.uOrbR) g.uniform1f(P.rib.U.uOrbR, orbR);
+          g.drawElements(g.TRIANGLES, RSEG * 6, g.UNSIGNED_SHORT, 0);
+        }
+        /* far-wave dust */
+        blendAdd();
+        for (var wi = 0; wi < waveDust.n; wi++){
+          var rib2 = ribbons[Math.floor(wi / 56)];
+          var uu2 = waveDust.u[wi] + waveDust.speed[wi] * dt; uu2 -= Math.floor(uu2); waveDust.u[wi] = uu2;
+          var f2 = uu2 * RSEG, s02 = Math.floor(f2) % RSEG, fr2 = f2 - Math.floor(f2);
+          var cc = rib2.curve, aI2 = s02 * 3, bI2 = ((s02 + 1) % RSEG) * 3;
+          var tx3 = cc[bI2] - cc[aI2], ty3 = cc[bI2 + 1] - cc[aI2 + 1], ll = Math.hypot(tx3, ty3) || 1e-4; tx3 /= ll; ty3 /= ll;
+          var off2 = waveDust.v[wi] * rib2.width * 1.6 * 0.8 * scw;
+          wdPos[wi * 3] = cc[aI2] + (cc[bI2] - cc[aI2]) * fr2 - ty3 * off2;
+          wdPos[wi * 3 + 1] = cc[aI2 + 1] + (cc[bI2 + 1] - cc[aI2 + 1]) * fr2 + tx3 * off2;
+          wdPos[wi * 3 + 2] = 0;
+        }
+        updVbo(wdPosB, wdPos);
+        g.useProgram(P.dust.prog);
+        setAttribs(P.dust, [["position", 3, wdPosB, 0, 0], ["aPhase", 1, wdPhB, 0, 0], ["aSize", 1, wdSzB, 0, 0]]);
+        if (P.dust.U.uTime) g.uniform1f(P.dust.U.uTime, wt);
+        if (P.dust.U.uPx) g.uniform1f(P.dust.U.uPx, pxr);
+        if (P.dust.U.uColor) g.uniform3f(P.dust.U.uColor, 0.92, 0.88, 0.80);
+        if (P.dust.U.uOpacity) g.uniform1f(P.dust.U.uOpacity, 0.7);
+        g.drawArrays(g.POINTS, 0, waveDust.n);
+
+        /* ---- centre light sprite ---- */
+        drawQuad(P.tex, GC, GC, Rt * 2.2 * (1 + 0.1 * energy * VR), function(U){
+          g.activeTexture(g.TEXTURE0); g.bindTexture(g.TEXTURE_2D, glowTex);
+          if (U.uTex) g.uniform1i(U.uTex, 0);
+          if (U.uTint) g.uniform3f(U.uTint, 1.05, 1.0, 0.92);
+          if (U.uOpacity) g.uniform1f(U.uOpacity, Math.min(1, 2 * (0.34 + (0.3 * energy + 0.06 * talk) * VR)));
+        });
+
+        /* ---- particle core ---- */
+        var st = M.state, standby = st === "idle", speaking = st === "speaking";
+        coreMT += dt;
+        var target = standby ? 0.58 : speaking ? 1.2 : 1.5;
+        coreRt += (target - coreRt) * (1 - Math.pow(0.95, dt * 60));
+        coreRotY += dt * 0.07;
+        var bubbleAmp = standby ? 0.17 : 0.1 + 0.08 * coreRt;
+        var kLerp = 1 - Math.pow(0.62, dt * 60);
+        var crx = Math.cos(0.3), srx = Math.sin(0.3), cry = Math.cos(coreRotY), sry = Math.sin(coreRotY);
+        for (var i2 = 0; i2 < coreDraw; i2++){
+          var r = cBall[i2] * coreRt + Math.sin(coreMT * cSpeed[i2] + cPhase[i2]) * bubbleAmp;
+          if (speaking) r += Math.sin(cBall[i2] * 5.5 - coreMT * 5) * 0.5;
+          else if (!standby) r += Math.sin(cBall[i2] * 3 - coreMT * 1.7) * 0.11;
+          var px0 = cPos[i2 * 3], py0 = cPos[i2 * 3 + 1], pz0 = cPos[i2 * 3 + 2];
+          px0 += (cDir[i2 * 3] * r - px0) * kLerp; py0 += (cDir[i2 * 3 + 1] * r - py0) * kLerp; pz0 += (cDir[i2 * 3 + 2] * r - pz0) * kLerp;
+          cPos[i2 * 3] = px0; cPos[i2 * 3 + 1] = py0; cPos[i2 * 3 + 2] = pz0;
+          var wx = px0 * cry + pz0 * sry, wz = -px0 * sry + pz0 * cry;
+          var wy = py0 * crx - wz * srx;
+          corePosArr[i2 * 3] = GC + wx * scw;
+          corePosArr[i2 * 3 + 1] = GC - wy * scw;
+          corePosArr[i2 * 3 + 2] = 0;
+          coreSzArr[i2] = standby ? 0.026 : 0.018;
+        }
+        updVbo(corePosB, corePosArr); updVbo(coreSzB, coreSzArr);
+        g.useProgram(P.pts.prog);
+        setAttribs(P.pts, [["position", 3, corePosB, 0, 0], ["aSize", 1, coreSzB, 0, 0]]);
+        g.activeTexture(g.TEXTURE0); g.bindTexture(g.TEXTURE_2D, glowTex);
+        if (P.pts.U.uTex) g.uniform1i(P.pts.U.uTex, 0);
+        if (P.pts.U.uPx) g.uniform1f(P.pts.U.uPx, vh * 0.2234 * pxr);
+        if (P.pts.U.uColor) g.uniform3f(P.pts.U.uColor, 0.88, 0.90, 0.94);
+        if (P.pts.U.uOpacity) g.uniform1f(P.pts.U.uOpacity, standby ? 1 : 0.92);
+        g.drawArrays(g.POINTS, 0, coreDraw);
+
+        /* ---- floating motes ---- */
+        var tt = t * 0.11;
+        var spd = standby ? 0.35 : st === "listening" ? 0.5 : st === "thinking" ? 0.45 : 0.55 + energy * 0.12;
+        var ddt = Math.min(dt, 0.05);
+        MPOOLS.forEach(function(pool){
+          var mp = pool.pos, mv = pool.vel, mh = pool.home, sd = pool.seed, n = pool.n;
+          for (var i3 = 0; i3 < n; i3++){
+            var k = i3 * 3, x0 = mp[k], y0 = mp[k + 1];
+            var fx2 = Math.sin(y0 * 1.3 + tt * 0.9 + sd[i3]) * 0.55 + Math.cos(x0 * 0.7 - tt * 0.6) * 0.35 - y0 * 0.12;
+            var fy2 = Math.cos(x0 * 1.1 - tt * 0.7 + sd[i3] * 0.5) * 0.55 + Math.sin(y0 * 0.8 + tt * 0.5) * 0.35 + x0 * 0.12;
+            mv[k] += (fx2 - mv[k]) * 0.6 * ddt + Math.sin(tt * 1.7 + sd[i3] * 3) * 0.12 * ddt;
+            mv[k + 1] += (fy2 - mv[k + 1]) * 0.6 * ddt + Math.cos(tt * 1.3 + sd[i3] * 2) * 0.12 * ddt;
+            var x = x0 + mv[k] * spd * ddt, y = y0 + mv[k + 1] * spd * ddt, z = mp[k + 2];
+            var rr3 = Math.sqrt(x * x + y * y) || 1e-4;
+            var pull = (mh[i3] - rr3) * 0.55 * ddt;
+            x += x / rr3 * pull; y += y / rr3 * pull;
+            z += (Math.sin(tt * 0.3 + sd[i3]) * 0.25 - z) * 0.3 * ddt;
+            mp[k] = x; mp[k + 1] = y; mp[k + 2] = z;
+            var wx2 = x * cry + z * sry, wz2 = -x * sry + z * cry;
+            var wy2 = y * crx - wz2 * srx;
+            pool.stage[k] = GC + wx2 * scw;
+            pool.stage[k + 1] = GC - wy2 * scw;
+            pool.stage[k + 2] = 0;
+          }
+          updVbo(pool.posB, pool.stage);
+          g.useProgram(P.pts.prog);
+          setAttribs(P.pts, [["position", 3, pool.posB, 0, 0], ["aSize", 1, pool.szB, 0, 0]]);
+          g.activeTexture(g.TEXTURE0); g.bindTexture(g.TEXTURE_2D, glowTex);
+          if (P.pts.U.uTex) g.uniform1i(P.pts.U.uTex, 0);
+          if (P.pts.U.uPx) g.uniform1f(P.pts.U.uPx, vh * 0.2234 * pxr);
+          if (P.pts.U.uColor) g.uniform3f(P.pts.U.uColor, pool.col[0], pool.col[1], pool.col[2]);
+          if (P.pts.U.uOpacity) g.uniform1f(P.pts.U.uOpacity, Math.min(1, pool.alpha * 2));
+          g.drawArrays(g.POINTS, 0, n);
+        });
+
+        /* ---- ring neon + gold spill ---- */
+        drawQuad(P.glow, GC, GC, Rt * 4.4, function(U){
+          if (U.uOpacity) g.uniform1f(U.uOpacity, 0.75);
+          if (U.uTime) g.uniform1f(U.uTime, ct);
+          if (U.uVoice) g.uniform1f(U.uVoice, energy * VR);
+          if (U.uTalk) g.uniform1f(U.uTalk, talk * VR);
+          if (U.uNeon) g.uniform1f(U.uNeon, 0.1);
+          if (U.uNeonW) g.uniform1f(U.uNeonW, 1.8 * pxr);
+          if (U.uSpill) g.uniform1f(U.uSpill, 1.65);
+          if (U.uOrbPx) g.uniform2f(U.uOrbPx, orbC, orbC);
+          if (U.uOrbR) g.uniform1f(U.uOrbR, orbR);
+        });
+
+        /* ---- orbiting lines: geometry (the original's per-line maths) ---- */
+        var count = Math.round(DIAL.linesCount);
+        var widthPx = 1.4 * GQ * (1 + 0.25 * energy * VL);
+        var glowAll = DIAL.linesGlow * (1 + (0.55 * energy + 0.1 * talk) * VL);
+        var li, L;
+        for (li = 0; li < lines.length; li++){
+          L = lines[li];
+          L.on = li < count;
+          if (!L.on) continue;
+          if (L.R <= 0) L.R = Rt;
+          L.R += (Rt - L.R) * Math.min(1, dt * 2.9 * L.lag);
+          var R = L.R;
+          var az = L.az + L.prec * ct + 0.4 * Math.sin(ct * 0.013 + L.seed);
+          var tiltA = (22 * Math.PI / 180) * L.tilt * (0.8 + 0.2 * Math.sin(ct * 0.017 + L.seed * 1.3));
+          var sT = Math.sin(tiltA);
+          var Nx = sT * Math.sin(az), Ny = -sT * Math.cos(az), Nz = Math.cos(tiltA);
+          var Ul = Math.sqrt(Nz * Nz + Nx * Nx) || 1;
+          var Ux = Nz / Ul, Uy = 0, Uz = -Nx / Ul;
+          var Vx = Ny * Uz - Nz * Uy, Vy = Nz * Ux - Nx * Uz, Vz = Nx * Uy - Ny * Ux;
+          var th = L.th0 + L.thA * (0.7 * Math.sin(ct * L.thW + L.thP) + 0.3 * Math.sin(ct * L.thW * 2.3 + L.thP * 1.7));
+          var cth = Math.cos(th), sth = Math.sin(th);
+          var rb = 0.95 + (2.05 - 0.95) * L.rank;
+          var c = L.c, s3, a3, k3;
+          for (s3 = 0; s3 <= LSEG; s3++){
+            a3 = (s3 % LSEG) / LSEG * TAU;
+            var rr = 1;
+            for (k3 = 0; k3 < 5; k3++){ var hm = L.harm[k3]; rr += chaos * hm.amp * Math.sin(hm.k * a3 + hm.ph + hm.w * ct); }
+            rr = rb * rr;
+            var dfl = (rr - 0.86) * 9;
+            rr = 0.86 + (dfl > 30 ? dfl : Math.log(1 + Math.exp(dfl))) / 9;
+            var no = 0;
+            for (k3 = 0; k3 < 2; k3++){ var lf = L.lift[k3]; no += lf.amp * Math.sin(lf.k * a3 + lf.ph + lf.w * ct); }
+            no *= chaos * rb;
+            var lx = Math.cos(a3) * rr, ly = Math.sin(a3) * rr;
+            var ux = (lx * cth - ly * sth) * R, vy = (lx * sth + ly * cth) * R, nz = no * R;
+            c[s3 * 3] = GC + ux * Ux + vy * Vx + nz * Nx;
+            c[s3 * 3 + 1] = GC - (ux * Uy + vy * Vy + nz * Ny);
+            c[s3 * 3 + 2] = ux * Uz + vy * Vz + nz * Nz;
+          }
+          var wander = 0.75 + 0.25 * Math.sin(ct * 0.17 + L.seed);
+          var dwell = Math.sin(ct * 0.05 + L.seed * 3) < -0.6 ? 0.15 : 1;
+          L.phase += L.hotDir * L.hotSpeed * wander * dwell * dt * speed * (1 + 1.5 * talk * VL);
+          if (L.phase >= 1 || L.phase < 0){ L.jumps++; L.phase = fracN(Math.sin(L.seed * 12.9898 + L.jumps * 78.233) * 43758.5453); }
+          L.envelope = Math.min(1, Math.max(0, (Math.sin(ct * 0.08 + L.seed * 1.9) + 0.2) / 0.7));
+          L.gold = L.goldPick < DIAL.linesGold ? 1 : 0;
+          for (s3 = 0; s3 <= LSEG; s3++){
+            var q3 = s3 * 3, n3 = ((s3 + 1) % LSEG) * 3, m3 = ((s3 - 1 + LSEG) % LSEG) * 3;
+            var dx = c[n3] - c[m3], dy = c[n3 + 1] - c[m3 + 1];
+            var zw = c[q3 + 2] * wpu;
+            for (var vv = 0; vv < 2; vv++){
+              var oo = (s3 * 2 + vv) * 10;
+              lineVerts[oo] = c[q3]; lineVerts[oo + 1] = c[q3 + 1]; lineVerts[oo + 2] = zw;
+              lineVerts[oo + 3] = dx; lineVerts[oo + 4] = dy; lineVerts[oo + 5] = 0;
+              lineVerts[oo + 6] = s3 / LSEG; lineVerts[oo + 7] = vv ? 1 : -1;
+              lineVerts[oo + 8] = c[q3 + 2] / R; lineVerts[oo + 9] = zw;
+            }
+          }
+          if (!L.vbo) L.vbo = dynVbo(lineVerts); else updVbo(L.vbo, lineVerts);
+        }
+        /* ---- line smoke, then line cores ---- */
+        var smokeHalf = Math.max(4, 0.27 * orbR);
+        for (li = 0; li < lines.length; li++){
+          L = lines[li]; if (!L.on) continue;
+          var su = DIAL.smokeAmount * L.smokePick * (L.gold ? 0.5 : 1) * (1 + 0.35 * energy * VL);
+          if (su <= 0.02) continue;
+          drawLine(P.smoke, L, smokeHalf, { uSmoke: su });
+        }
+        var halfPx = Math.max(2.5 * GQ, widthPx * 3);
+        var coreFrac = Math.min(0.9, widthPx * 0.5 / halfPx * 1.2);
+        for (li = 0; li < lines.length; li++){
+          L = lines[li]; if (!L.on) continue;
+          drawLine(P.core, L, halfPx, {
+            uGlow: glowAll * L.bright * (L.gold ? 0.7 : 1), uGlowVar: 1, uCoreFrac: coreFrac, uGold: L.gold,
+            uHot: L.phase, uHotK: L.hotK, uHotStrength: 1.6 * L.hotGain * L.envelope * (L.gold ? 0.4 : 1) * (1 + 0.9 * energy * VL)
+          });
+        }
+        /* ---- star dust riding the lines ---- */
+        var grains = Math.round(DIAL.dustAmount);
+        for (var gi = 0; gi < lineDust.n; gi++){
+          var liIdx = Math.floor(gi / 40), gj = gi % 40;
+          var Ld = lines[liIdx];
+          if (!Ld || !Ld.on || gj >= grains){ ldPos[gi * 3] = 1e6; ldPos[gi * 3 + 1] = 1e6; ldPos[gi * 3 + 2] = 0; continue; }
+          var uu = lineDust.u[gi] + lineDust.speed[gi] * dt * speed * (1 + 0.8 * talk * VL);
+          uu -= Math.floor(uu); lineDust.u[gi] = uu;
+          var f = uu * LSEG, s0 = Math.floor(f) % LSEG, fr = f - Math.floor(f);
+          var ca = Ld.c, aI = s0 * 3, bI = ((s0 + 1) % LSEG) * 3;
+          var off = Ld.R * 0.5 * (0.04 + lineSeats.far[gi]) * (0.8 + 0.2 * Math.sin(ct * 0.3 + lineSeats.wob[gi]));
+          ldPos[gi * 3] = ca[aI] + (ca[bI] - ca[aI]) * fr + lineSeats.ox[gi] * off;
+          ldPos[gi * 3 + 1] = ca[aI + 1] + (ca[bI + 1] - ca[aI + 1]) * fr + lineSeats.oy[gi] * off;
+          ldPos[gi * 3 + 2] = 0;
+          var gz = ca[aI + 2] + (ca[bI + 2] - ca[aI + 2]) * fr + lineSeats.oz[gi] * off;
+          ldSz[gi] = lineDust.sz[gi] * (4.8 / (4.8 - gz * wpu));
+        }
+        updVbo(ldPosB, ldPos); updVbo(ldSzB, ldSz);
+        g.useProgram(P.dust.prog);
+        setAttribs(P.dust, [["position", 3, ldPosB, 0, 0], ["aPhase", 1, ldPhB, 0, 0], ["aSize", 1, ldSzB, 0, 0]]);
+        if (P.dust.U.uTime) g.uniform1f(P.dust.U.uTime, ct);
+        if (P.dust.U.uPx) g.uniform1f(P.dust.U.uPx, pxr * 1.05);
+        if (P.dust.U.uColor) g.uniform3f(P.dust.U.uColor, 0.95, 0.90, 0.82);
+        if (P.dust.U.uOpacity) g.uniform1f(P.dust.U.uOpacity, Math.min(1.5, 0.9 * 2.5 * (1 + 0.4 * energy * VL)));
+        g.drawArrays(g.POINTS, 0, lineDust.n);
       }
-      window.__apexUiEnter = enterHumanoid;
-      /* ---------- the core tap → a voice conversation right here ----------
-         The centre no longer enters the humanoid: it starts (or stops)
-         a voice conversation in this HUD, like MIRA's — Apex listens,
-         answers through the shared chat and speaks with the configured
-         voice model. The humanoid side mirrors the conversation state
-         into the status bar via __apexHudState. */
-      var HUD_STATE_LABEL = { idle: "STANDBY", listening: "LISTENING", thinking: "THINKING", speaking: "SPEAKING" };
+
+      function startFx(){
+        if (fxRunning) return;
+        if (reduced){ drawGl(1.2, 0.016); return; }
+        fxRunning = true;
+        var t0 = performance.now(), last = performance.now();
+        (function frame(now){
+          if (!worldActive){ fxRunning = false; return; }
+          var dt = Math.min(0.1, (now - last) / 1000); last = now;
+          var t = (now - t0) / 1000;
+          /* voice envelope — miraStage's smoothing, time-based so the feel
+             is identical at any refresh rate */
+          var raw = M.state === "speaking" ? M.energy : 0;
+          M.voice += (raw - M.voice) * Math.min(1, dt * (raw > M.voice ? 28 : 7));
+          var tk = M.state === "speaking" ? 1 : 0;
+          M.talk += (tk - M.talk) * Math.min(1, dt * (tk > M.talk ? 10 : 2.2));
+          var ls = (M.state === "listening" && M.state !== "speaking") ? 1 : 0;
+          M.listen += (ls - M.listen) * Math.min(1, dt * 4);
+          if (M.voice < 0.01) M.voice = 0;
+          drawGl(t, dt);
+          document.getElementById("miraCast").style.opacity = (0.75 + M.voice * 0.6).toFixed(2);
+          drawWave(t);
+          requestAnimationFrame(frame);
+        })(t0);
+      }
+      /* rebuild lines when their dial numbers change */
+      ["d-linesCount", "d-linesGold", "d-linesChaos"].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) el.addEventListener("input", buildLines);
+      });
+
+      /* ============================== listening: mic + speech recognition ============================== */
+
+      /* ============================== v14 bridge wiring ==============================
+         The conversation is the DESKTOP app's own voice session (shared
+         STT -> streaming chat -> pipelined voice-model TTS), driven through
+         __apexHudTalkStart/__apexHudTalkStop/__apexHudTalkOn. This HUD only
+         mirrors its state: __apexHudState is called by the humanoid side
+         (setState) with listening/thinking/speaking, and "standby" when the
+         session stops. The centre orb and the bottom dot start/stop the
+         talk — they NEVER enter the humanoid. Entry is ONLY the ENTER
+         HUMANOID pill or the spoken "open humanoid" command (the shared
+         pipeline calls __apexUiEnter for it). */
+      function startListenFx(){
+        (function listenTick(){
+          if (M.state !== "listening") return;
+          var t = performance.now() / 1000;
+          M.energy = fakeVoice(t * 0.8, 2.1) * 0.7;
+          requestAnimationFrame(listenTick);
+        })();
+      }
+      function startSpeakFx(){
+        (function speakTick(){
+          if (M.state !== "speaking") return;
+          M.energy = fakeVoice(performance.now() / 1000, 0.3);
+          requestAnimationFrame(speakTick);
+        })();
+      }
+      var HUD_LABEL = { idle: "STANDBY", listening: "LISTENING", thinking: "PROCESSING", speaking: "SPEAKING" };
       window.__apexHudState = function(st){
-        if (sbState) sbState.textContent = HUD_STATE_LABEL[st] || "STANDBY";
-        uiWorld.classList.toggle("hud-speaking", st === "speaking");
+        if (!worldActive) return;
+        if (st === "standby") st = "idle";
+        if (HUD_LABEL[st]) setMiraState(st, { quiet: true });
+      };
+      window.__apexHudNote = function(text){
+        setMiraState("idle", { quiet: true });
+        sbState.textContent = text;
       };
       function toggleHudTalk(){
-        if (leaving) return;
+        if (!worldActive || leaving) return;
+        if (window.__apexMicEnabled && !window.__apexMicEnabled()){
+          window.__apexHudNote("MIC OFF \u2014 TURN ON IN AI SETTINGS");
+          return;
+        }
         if (window.__apexHudTalkOn && window.__apexHudTalkOn()){
           if (window.__apexHudTalkStop) window.__apexHudTalkStop();
-          if (sbState) sbState.textContent = "STANDBY";
+          setMiraState("idle", { quiet: true });
         } else if (window.__apexHudTalkStart){
           window.__apexHudTalkStart();
         }
       }
-      var coreTap = document.getElementById("coreTap");
-      coreTap.addEventListener("click", toggleHudTalk);
-      coreTap.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); toggleHudTalk(); } });
-      coreTap.addEventListener("mousedown", function(e){ e.preventDefault(); });
-
-      /* the small circle at the bottom of the status bar: tapping it flips
-         the status to LISTENING and enters the humanoid too — in listening
-         state, so Apex arrives with its listening rings up */
-      var sbTap = document.getElementById("sbTap"), sbState = document.getElementById("sbState");
-      function enterListening(){
-        if (sbState) sbState.textContent = "LISTENING";
-        window.__apexPendingState = "listening";
-        enterHumanoid();
+      miraTap.addEventListener("click", toggleHudTalk);
+      miraTap.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); toggleHudTalk(); } });
+      var sbTapEl = document.getElementById("miraSbTap");
+      if (sbTapEl){
+        sbTapEl.addEventListener("click", toggleHudTalk);
+        sbTapEl.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); toggleHudTalk(); } });
       }
-      if (sbTap){
-        sbTap.addEventListener("click", enterListening);
-        sbTap.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); enterListening(); } });
+      document.getElementById("miraAiBtn").addEventListener("click", function(){
+        if (window.__apexOpenAiPanel) window.__apexOpenAiPanel();
+        else { var b = document.getElementById("aiBtn"); if (b) b.click(); }
+      });
+      function enterHumanoid(pendingState){
+        if (leaving || !worldActive) return; leaving = true;
+        if (pendingState) window.__apexPendingState = pendingState;
+        else if (M.state !== "idle") window.__apexPendingState = M.state;
+        worldActive = false; leaving = false;
+        if (window.__apexEnterHumanoid) window.__apexEnterHumanoid();
       }
-
-      /* returning from the humanoid (EXIT) revives the world */
+      document.getElementById("enterHumBtn").addEventListener("click", function(){ enterHumanoid(); });
+      window.__apexUiEnter = function(){ enterHumanoid("listening"); };
       window.__apexShowWorld = function(){
         worldActive = true;
-        if (sbState) sbState.textContent = "STANDBY";
-        startShader(); startCore(); if (rwStartLoop) rwStartLoop();
+        setMiraState("idle", { quiet: true });
+        startField(); startFx();
       };
-
-      if (worldActive){ startShader(); startCore(); if (rwStartLoop) rwStartLoop(); }
-      else if (reduced){ drawCoreFrame(1.2); }
+      if (worldActive){ startField(); startFx(); }
+      else if (reduced){ drawGl(1.2, 0.016); drawWave(0); }
     })();
     </script>
 
