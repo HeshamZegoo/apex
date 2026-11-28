@@ -52,14 +52,6 @@
 
       .topBtn { position: absolute; top: 18px; z-index: 20; min-height: 44px; padding: 0 14px; border: 1px solid rgba(34,211,238,.33); border-radius: 9px; background: rgba(0,10,14,.72); color: var(--cyan); font-size: 12px; letter-spacing: .08em; cursor: pointer; box-shadow: 0 0 18px rgba(34,211,238,.08); }
       #exitBtn { left: 18px; min-width: 44px; border-color: rgba(34,211,238,.33); }
-      #gestureBtn { left: 88px; border-color: rgba(34,211,238,.25); box-shadow: 0 0 18px rgba(34,211,238,.06); }
-      #camDot { position: absolute; top: 33px; left: 270px; z-index: 20; width: 14px; height: 14px; min-height: 14px; border-radius: 50%; border: none; cursor: pointer; background: #ff4444; box-shadow: 0 0 10px rgba(255,68,68,.67); animation: fadeInOut 1.6s ease infinite; padding: 0; display: none; }
-
-      #gesturePanel { position: absolute; top: 74px; left: 18px; z-index: 30; width: 248px; max-width: calc(100vw - 36px); background: rgba(0,10,14,.88); border: 1px solid rgba(34,211,238,.3); border-radius: 10px; padding: 12px; color: var(--pale); font-size: 11px; line-height: 1.6; letter-spacing: .06em; display: none; backdrop-filter: blur(4px); }
-      #gesturePanel video { position: fixed; left: -10000px; top: 0; width: 320px; height: 240px; opacity: 0; pointer-events: none; }
-      #gesturePanel .gpTitle { color: var(--cyan); letter-spacing: .18em; font-size: 11px; margin-bottom: 6px; }
-      #gesturePanel button { margin-top: 10px; width: 100%; padding: 9px 10px; min-height: 40px; background: rgba(34,211,238,.12); color: var(--cyan); border: 1px solid rgba(34,211,238,.4); border-radius: 7px; font-size: 11px; letter-spacing: .14em; cursor: pointer; }
-      #gestureMsg { color: var(--dim); margin-top: 8px; font-size: 10px; min-height: 14px; }
 
 
       /* ---------- AI settings side panel ---------- */
@@ -90,8 +82,6 @@
 
       @media (max-width: 560px) {
         #status { top: 15%; max-width: 40%; }
-        #gestureBtn { left: 84px; }
-        #camDot { left: auto; right: 18px; top: 30px; }
       }
 
       /* ================= APEX-UI — the first interface (orb + reasoning web) =================
@@ -436,7 +426,6 @@
 
       <div class="mw-pills">
         <a class="mw-pill" href="https://github.com/RubenM1990/MIRA-HUD" target="_blank" rel="noopener noreferrer">View on GitHub ↗</a>
-        <button class="mw-pill" id="dialBtn" type="button" aria-label="Open the design dial">Design dial</button>
         <button class="mw-pill" id="miraAiBtn" type="button" aria-label="Open AI settings">AI settings</button>
       </div>
 
@@ -736,6 +725,8 @@ Your highest priority is to make every interaction feel intelligent, personal to
         <button id="aiReplayBtn" class="ctlBtn" type="button">&#8635; REPLAY</button>
         <label for="aiSoundBtn">SOUND</label>
         <button id="aiSoundBtn" class="ctlBtn" type="button" aria-pressed="true">&#9834; SOUND ON</button>
+        <label for="aiDialBtn">HUD DESIGN</label>
+        <button id="aiDialBtn" class="ctlBtn" type="button">&#9673; DESIGN DIAL</button>
         <div class="apTitle" style="margin-top:18px">VOICE</div>
         <div class="apSub">Spoken replies come from a voice model you choose below — pick a provider, add its key, press DONE. The chat model above stays the brain. APEX also LISTENS through this provider — his microphone audio is transcribed by its AI speech-to-text (Fish ASR · ElevenLabs Scribe · Gemini · Custom transcriptions). There is no local model.</div>
         <label for="aiVoiceEngine">VOICE MODEL</label>
@@ -1735,6 +1726,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
         if (S.assembling && S.asmStart && (now - S.asmStart) / 1000 > ASM_TOTAL + 2){
           S.assembling = false;
           S.assemblyDone = true; revealBackdrop();
+          maybeGreet();
           statusEl.textContent = "STATUS: " + S.state.toUpperCase();
         }
 
@@ -1817,6 +1809,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
           if (p >= 1){
             S.assembling = false;
             S.assemblyDone = true; revealBackdrop(); // the mountains appear only now — the figure is complete
+            maybeGreet();
             trans.from = null; trans.to = S.state; trans.start = now;
             statusEl.textContent = "STATUS: " + S.state.toUpperCase();
           }
@@ -2208,6 +2201,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
       });
       $("aiReplayBtn").addEventListener("click", function(){ ensureAudio(); if (S.entered) startBirth(); else enter(); });
       $("aiSoundBtn").addEventListener("click", function(){ ensureAudio(); setSound(!S.soundOn); });
+      $("aiDialBtn").addEventListener("click", function(){ closeAiPanel(); if (window.__apexOpenDial) window.__apexOpenDial(); });
       $("aiProvider").addEventListener("change", function(){
         var b = PROVIDER_BASE[this.value];
         if (b) $("aiBase").value = b;
@@ -3022,10 +3016,28 @@ Your highest priority is to make every interaction feel intelligent, personal to
         if (S.entered) return;
         doEnter();
       }
+      /* ---- entry greeting: once the birth completes, Apex speaks
+         "I'm here, how can I help you?" through the configured voice
+         model, then the conversation loop listens. Exactly once per
+         entry: the flag is armed here in doEnter and consumed by
+         maybeGreet; leaving before the birth completes cancels it, and
+         a REPLAY birth never re-arms it. It rides the normal speech
+         pipeline (speakReply), so a HUD reply still playing at entry is
+         handed over cleanly — stopTtsAudio releases the speech latch
+         before the greeting starts, and endSpeak returns the loop to
+         listening — and with no voice model configured speakReply
+         reports VOICE MODEL NOT SET instead, exactly as for any reply. */
+      var greetPending = false;
+      function maybeGreet(){
+        if (!greetPending || !S.entered || !S.assemblyDone) return;
+        greetPending = false;
+        speakReply("I'm here, how can I help you?");
+      }
       function doEnter(){
         if (S.entered) return;
         ensureAudio();
         S.entered = true;
+        greetPending = true;
         hudTalk = false; // a HUD conversation continues inside as the normal voice loop
         gate.style.display = "none";
         var uwEl = $("uiWorld"); if (uwEl) uwEl.style.display = "none";
@@ -3041,6 +3053,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
         if (params.get("skip")) { S.assembling = false; S.assemblyDone = true; revealBackdrop(); statusEl.textContent = "STATUS: " + S.state.toUpperCase(); }
         else startBirth();
         maybeReveal();
+        maybeGreet(); // covers the skip path and the reduced-motion birth, which complete synchronously inside startBirth
         /* hands-free: entering the humanoid starts the continuous voice
            conversation (listen -> spoken reply -> listen again) with no
            dependence on any scene button; a conversation already running
@@ -3069,6 +3082,7 @@ Your highest priority is to make every interaction feel intelligent, personal to
       $("enterBtn").addEventListener("click", enter);
       $("exitBtn").addEventListener("click", function(){
         S.entered = false; S.assembling = false;
+        greetPending = false; // an entry left before its birth completes never greets
         S.revealed = false; S.assemblyDone = false; canvas.style.opacity = "0"; bgImg.style.opacity = "0";
         gateVoiceOn = false; setGateMicUI();
         stopMic(); stopCamera();
@@ -3080,10 +3094,11 @@ Your highest priority is to make every interaction feel intelligent, personal to
         var uwBack = $("uiWorld"); if (uwBack) uwBack.style.display = "block";
         if (window.__apexShowWorld) window.__apexShowWorld();
       });
-      /* No bottom bar, no replay/sound buttons: the humanoid scene keeps
-         only AI SETTINGS, EXIT and the hand-gesture button as controls.
-         Sound and the birth remain internal (startBirth / setSound are
-         still used by the entry flow itself). */
+      /* No bottom bar, no loose controls: the humanoid scene keeps only
+         EXIT and the AI SETTINGS opener. Every other control — mic,
+         hand-gesture camera, replay, sound, the HUD design dial — lives
+         inside AI SETTINGS. Sound and the birth remain internal
+         (startBirth / setSound are still used by the entry flow itself). */
 
       if (params.get("auto")) enter();
     })();
@@ -3192,7 +3207,11 @@ Your highest priority is to make every interaction feel intelligent, personal to
       var dialEl = document.getElementById("miraDial");
       function openDial(){ dialEl.style.display = "block"; requestAnimationFrame(function(){ dialEl.classList.add("open"); }); }
       function closeDial(){ dialEl.classList.remove("open"); setTimeout(function(){ if (!dialEl.classList.contains("open")) dialEl.style.display = "none"; }, 300); }
-      document.getElementById("dialBtn").addEventListener("click", function(){ dialEl.classList.contains("open") ? closeDial() : openDial(); });
+      /* the design dial's opener lives in AI SETTINGS now — no loose
+         control pills on the HUD; the panel's DESIGN DIAL button calls
+         this hook (the dial itself is a panel, opened from the panel) */
+      window.__apexOpenDial = openDial;
+      window.__apexCloseDial = closeDial;
       document.getElementById("miraDialClose").addEventListener("click", closeDial);
       document.querySelectorAll("#mdStates button").forEach(function(b){
         b.addEventListener("click", function(){ setMiraState(b.getAttribute("data-mstate")); });
